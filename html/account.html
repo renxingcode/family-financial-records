@@ -31,7 +31,8 @@
             background: #dde0e4;
         }
 
-        input {
+        input,
+        textarea {
             font-family: inherit;
             font-size: 14px;
             padding: 4px 6px;
@@ -39,6 +40,11 @@
             border-radius: 2px;
             width: 100%;
             box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 50px;
         }
 
         table {
@@ -88,6 +94,11 @@
             font-weight: 700;
         }
 
+        .text-muted {
+            color: #888;
+            font-size: 12px;
+        }
+
         /* 布局 */
         .header {
             display: flex;
@@ -110,6 +121,18 @@
 
         .table-wrapper {
             overflow-x: auto;
+        }
+
+        /* 备注列 - 最多显示2行，超出截断显示省略号 */
+        .remark-cell {
+            max-width: 150px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-all;
+            line-height: 1.4;
         }
 
         /* Modal 通用 */
@@ -163,6 +186,21 @@
             font-weight: 500;
             margin-bottom: 2px;
             font-size: 13px;
+        }
+
+        /* 查看态的只读汇总信息 */
+        .summary-line {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+
+        .summary-line .item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .form-actions {
@@ -315,6 +353,7 @@
                 <th>总余额</th>
                 <th>总存款 / 总负债</th>
                 <th v-for="f in displayFields" :key="f.key">{{ f.label }} (存款 / 负债)</th>
+                <th>备注</th>
             </tr>
             </thead>
             <tbody>
@@ -336,6 +375,7 @@
                     <span style="color:#bbb;margin:0 2px;">/</span>
                     <span class="text-red">{{ formatNumber(getFieldValue(item, f, 'debt')) }}</span>
                 </td>
+                <td class="remark-cell">{{ item.remark || '-' }}</td>
             </tr>
             </tbody>
         </table>
@@ -349,9 +389,30 @@
                 <button class="close-btn" @click="modalVisible = false">✕</button>
             </div>
 
+            <!-- 查看态显示汇总信息 -->
+            <template v-if="modalMode === 'edit' && !editable">
+                <div class="form-group">
+                    <label>汇总</label>
+                    <div class="summary-line">
+                        <span class="item">
+                            总余额：<span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                                {{ formatNumber(getBalance(form)) }}
+                            </span>
+                        </span>
+                        <span class="item">
+                            总存款：<span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
+                        </span>
+                        <span class="item">
+                            总负债：<span class="text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
+                        </span>
+                    </div>
+                </div>
+                <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
+            </template>
+
             <div class="form-group">
                 <label>日期</label>
-                <input type="date" v-model="form.date"/>
+                <input type="date" v-model="form.date" :disabled="modalMode === 'edit' && !editable"/>
             </div>
 
             <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
@@ -360,19 +421,38 @@
                 <div class="form-group" v-if="f.category.includes('deposit')">
                     <label>{{ f.label }} 存款</label>
                     <input type="text" :value="form[f.key + '_deposit']"
-                           @input="filterNumber(f.key + '_deposit', $event)" placeholder="金额"/>
+                           @input="filterNumber(f.key + '_deposit', $event)"
+                           placeholder="金额"
+                           :disabled="modalMode === 'edit' && !editable"/>
                 </div>
                 <div class="form-group" v-if="f.category.includes('debt')">
                     <label>{{ f.label }} 负债</label>
                     <input type="text" :value="form[f.key + '_debt']"
-                           @input="filterNumber(f.key + '_debt', $event)" placeholder="金额"/>
+                           @input="filterNumber(f.key + '_debt', $event)"
+                           placeholder="金额"
+                           :disabled="modalMode === 'edit' && !editable"/>
                 </div>
             </template>
 
+            <!-- 备注 -->
+            <div class="form-group">
+                <label>备注</label>
+                <textarea v-model="form.remark" placeholder="可选备注"
+                          :disabled="modalMode === 'edit' && !editable"></textarea>
+            </div>
+
             <div class="form-actions">
                 <button class="btn-secondary" @click="modalVisible = false">关闭</button>
-                <button class="btn-primary" @click="saveRecord">保存</button>
-                <button v-if="modalMode === 'edit'" class="btn-danger" @click="deleteRecord">删除</button>
+                <!-- 查看态：显示 编辑 + 删除 -->
+                <template v-if="modalMode === 'edit' && !editable">
+                    <button class="btn-primary" @click="editable = true">编辑</button>
+                    <button class="btn-danger" @click="deleteRecord">删除</button>
+                </template>
+                <!-- 编辑态 / 添加态 -->
+                <template v-else>
+                    <button class="btn-primary" @click="saveRecord">保存</button>
+                    <button v-if="modalMode === 'edit'" class="btn-danger" @click="deleteRecord">删除</button>
+                </template>
             </div>
         </div>
     </div>
@@ -485,6 +565,7 @@
             // 记录弹窗
             const modalVisible = ref(false);
             const modalMode = ref('add');   // 'add' | 'edit'
+            const editable = ref(false);    // 编辑态（true）还是查看态（false）
             const editIndex = ref(-1);
             const form = ref({});
 
@@ -570,7 +651,7 @@
 
             // 表单工具
             function getDefaultForm() {
-                const f = {date: ''};
+                const f = {date: '', remark: ''};
                 configs.value.forEach(c => {
                     if (c.category.includes('deposit')) f[c.key + '_deposit'] = '';
                     if (c.category.includes('debt')) f[c.key + '_debt'] = '';
@@ -606,6 +687,7 @@
                     return;
                 }
                 modalMode.value = 'add';
+                editable.value = true;
                 editIndex.value = -1;
                 form.value = getDefaultForm();
                 modalVisible.value = true;
@@ -617,6 +699,7 @@
                 const realIdx = records.value.findIndex(r => r.date === item.date);
                 if (realIdx === -1) return;
                 modalMode.value = 'edit';
+                editable.value = false; // 默认查看态
                 editIndex.value = realIdx;
                 form.value = {...records.value[realIdx]};
                 modalVisible.value = true;
@@ -639,16 +722,16 @@
                 // 检查是否有非零金额
                 let hasValue = false;
                 Object.keys(f).forEach(k => {
-                    if (k !== 'date' && Number(f[k]) !== 0) hasValue = true;
+                    if (k !== 'date' && k !== 'remark' && Number(f[k]) !== 0) hasValue = true;
                 });
-                if (!hasValue) {
-                    showToast('请至少填写一个金额');
+                if (!hasValue && !f.remark) {
+                    showToast('请至少填写一个金额或备注');
                     return;
                 }
 
-                const clean = {date: f.date};
+                const clean = {date: f.date, remark: f.remark || ''};
                 Object.keys(f).forEach(k => {
-                    if (k !== 'date') {
+                    if (k !== 'date' && k !== 'remark') {
                         clean[k] = Number(f[k]) || 0;
                     }
                 });
@@ -740,6 +823,7 @@
                 sortedRecords,
                 modalVisible,
                 modalMode,
+                editable,
                 form,
                 displayFields,
                 allConfigs,
