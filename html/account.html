@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭账户</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            color: #222;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 4px 12px;
+            border: 1px solid #aaa;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+
+        button:hover {
+            background: #dde0e4;
+        }
+
+        input {
+            font-family: inherit;
+            font-size: 14px;
+            padding: 4px 6px;
+            border: 1px solid #aaa;
+            border-radius: 2px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #e9ecef;
+            font-weight: 600;
+        }
+
+        a {
+            color: #0066cc;
+            text-decoration: underline dotted;
+            cursor: pointer;
+        }
+
+        a:hover {
+            color: #003d80;
+        }
+
+        /* 布局 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        /* Modal 通用 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 16px;
+        }
+
+        .modal-box {
+            background: #fff;
+            border: 1px solid #888;
+            padding: 20px 24px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .modal-title .close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .form-actions button {
+            flex: 1;
+            padding: 8px 0;
+            min-width: 60px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: #fff;
+            border-color: #2a7fb5;
+        }
+
+        .btn-primary:hover {
+            background: #2a7fb5;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+            border-color: #c0392b;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            border-color: #aaa;
+        }
+
+        .btn-secondary:hover {
+            background: #dde0e4;
+        }
+
+        /* 银行卡管理列表 */
+        .bank-card-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .bank-card-item:last-child {
+            border-bottom: none;
+        }
+
+        .bank-card-label {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .bank-card-types {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .bank-card-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* 复选框组 */
+        .checkbox-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 400;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 24px 0;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 工具类 */
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <!-- 头部 -->
+    <div class="header">
+        <h1>📊 家庭账户</h1>
+        <div class="header-actions">
+            <button @click="openBankManager">💳 银行卡</button>
+            <button class="btn-primary" @click="openAddModal">＋ 添加</button>
+        </div>
+    </div>
+
+    <!-- 数据列表 -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th>日期</th>
+                <th>总余额</th>
+                <th>总存款-总负债</th>
+                <th v-for="f in displayFields" :key="f.key">{{ f.label }}(存款-负债)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="sortedRecords.length === 0">
+                <td colspan="100" class="empty-state">暂无记录</td>
+            </tr>
+            <tr v-for="(item, idx) in sortedRecords" :key="item.date">
+                <td><a @click="openEditModal(idx)">{{ item.date }}</a></td>
+                <td>{{ getBalance(item) }}</td>
+                <td>{{ getTotalDeposit(item) }}-{{ getTotalDebt(item) }}</td>
+                <td v-for="f in displayFields" :key="f.key">
+                    {{ getFieldValue(item, f, 'deposit') }}-{{ getFieldValue(item, f, 'debt') }}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 添加/编辑弹窗 -->
+    <div v-if="modalVisible" class="modal-overlay" @click.self="modalVisible = false">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>{{ modalMode === 'add' ? '添加记录' : '编辑记录' }}</span>
+                <button class="close-btn" @click="modalVisible = false">✕</button>
+            </div>
+
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" v-model="form.date"/>
+            </div>
+
+            <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
+
+            <template v-for="f in editableFields" :key="f.key">
+                <div class="form-group" v-if="f.category.includes('deposit')">
+                    <label>{{ f.label }} 存款</label>
+                    <input type="text" :value="form[f.key + '_deposit']"
+                           @input="filterNumber(f.key + '_deposit', $event)" placeholder="金额"/>
+                </div>
+                <div class="form-group" v-if="f.category.includes('debt')">
+                    <label>{{ f.label }} 负债</label>
+                    <input type="text" :value="form[f.key + '_debt']"
+                           @input="filterNumber(f.key + '_debt', $event)" placeholder="金额"/>
+                </div>
+            </template>
+
+            <div class="form-actions">
+                <button class="btn-secondary" @click="modalVisible = false">关闭</button>
+                <button class="btn-primary" @click="saveRecord">保存</button>
+                <button v-if="modalMode === 'edit'" class="btn-danger" @click="deleteRecord">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 银行卡管理弹窗 -->
+    <div v-if="bankManagerVisible" class="modal-overlay" @click.self="bankManagerVisible = false">
+        <div class="modal-box" style="max-width:520px;">
+            <div class="modal-title">
+                <span>💳 银行卡管理</span>
+                <div>
+                    <button class="btn-primary" @click="openAddBankCard" style="margin-right:6px;">＋ 新增</button>
+                    <button class="close-btn" @click="bankManagerVisible = false">✕</button>
+                </div>
+            </div>
+
+            <div v-if="allConfigs.length === 0" class="empty-state">暂无银行卡，请添加</div>
+            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item">
+                <div>
+                    <span class="bank-card-label">{{ f.label }}</span>
+                    <span class="bank-card-types">
+                        ({{ f.category.includes('deposit') ? '存款' : ''
+                        }}{{ f.category.includes('debt') && f.category.includes('deposit') ? '、' : ''
+                        }}{{ f.category.includes('debt') ? '负债' : '' }})
+                    </span>
+                </div>
+                <div class="bank-card-actions">
+                    <button @click="openEditBankCard(f)">编辑</button>
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:12px;">
+                <button class="btn-secondary" @click="bankManagerVisible = false">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/编辑银行卡子弹窗 -->
+    <div v-if="bankFormVisible" class="modal-overlay" @click.self="bankFormVisible = false">
+        <div class="modal-box" style="max-width:400px;">
+            <div class="modal-title">
+                <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
+                <button class="close-btn" @click="bankFormVisible = false">✕</button>
+            </div>
+
+            <div class="form-group">
+                <label>显示名称</label>
+                <input v-model="bankForm.label" placeholder="如：招商银行"/>
+            </div>
+
+            <div class="form-group">
+                <label>类型</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" v-model="bankForm.category" value="deposit"> 存款</label>
+                    <label><input type="checkbox" v-model="bankForm.category" value="debt"> 负债</label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" @click="bankFormVisible = false">取消</button>
+                <button class="btn-primary" @click="saveBankCard">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" :class="{ show: toastMsg }">{{ toastMsg }}</div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js">
+</script>
+<script>
+    const {createApp, ref, computed, onMounted} = Vue;
+
+    // 配置 & 存储
+    var STORAGE_KEYS = {
+        RECORDS: 'financial_account_records',
+        BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
+    };
+
+    function loadConfig() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Array.isArray(data) && data.length) return data;
+            }
+        } catch (_) {
+        }
+        return [];
+    }
+
+    function saveConfig(config) {
+        localStorage.setItem(STORAGE_KEYS.BANK_CARD_CONFIGS, JSON.stringify(config));
+    }
+
+    function generateKey() {
+        return 'card_' + Date.now();
+    }
+
+    const app = createApp({
+        setup() {
+            // 数据
+            const records = ref([]);
+            const configs = ref(loadConfig());
+
+            // Toast
+            const toastMsg = ref('');
+            let toastTimer = null;
+
+            // 记录弹窗
+            const modalVisible = ref(false);
+            const modalMode = ref('add');   // 'add' | 'edit'
+            const editIndex = ref(-1);
+            const form = ref({});
+
+            // 银行卡管理
+            const bankManagerVisible = ref(false);
+            const bankFormVisible = ref(false);
+            const bankFormMode = ref('add');  // 'add' | 'edit'
+            const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
+            const editingCardKey = ref('');
+
+            // 计算
+            const displayFields = computed(() => configs.value);
+            const allConfigs = computed(() => configs.value);
+            const editableFields = computed(() => configs.value);
+
+            const sortedRecords = computed(() => {
+                return [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+            });
+
+            // 核心函数
+            function getFieldValue(item, f, type) {
+                return Number(item[f.key + '_' + type]) || 0;
+            }
+
+            function getTotalDeposit(item) {
+                let sum = 0;
+                configs.value.forEach(f => {
+                    if (f.category.includes('deposit')) {
+                        sum += Number(item[f.key + '_deposit']) || 0;
+                    }
+                });
+                return sum;
+            }
+
+            function getTotalDebt(item) {
+                let sum = 0;
+                configs.value.forEach(f => {
+                    if (f.category.includes('debt')) {
+                        sum += Number(item[f.key + '_debt']) || 0;
+                    }
+                });
+                return sum;
+            }
+
+            function getBalance(item) {
+                return getTotalDeposit(item) - getTotalDebt(item);
+            }
+
+            // Toast
+            function showToast(msg) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toastMsg.value = msg;
+                toastTimer = setTimeout(() => {
+                    toastMsg.value = '';
+                    toastTimer = null;
+                }, 2000);
+            }
+
+            // 数据持久化
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.RECORDS);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        if (Array.isArray(data)) records.value = data;
+                    }
+                } catch (_) {
+                }
+            }
+
+            function saveData() {
+                localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records.value));
+            }
+
+            // 表单工具
+            function getDefaultForm() {
+                const f = {date: ''};
+                configs.value.forEach(c => {
+                    if (c.category.includes('deposit')) f[c.key + '_deposit'] = '';
+                    if (c.category.includes('debt')) f[c.key + '_debt'] = '';
+                });
+                const now = new Date();
+                f.date = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                return f;
+            }
+
+            function filterNumber(key, event) {
+                let val = event.target.value.replace(/[^0-9]/g, '');
+                if (val === '') {
+                    form.value[key] = '';
+                } else {
+                    const num = Number(val);
+                    if (!isNaN(num) && num >= 0) form.value[key] = num;
+                    else event.target.value = form.value[key] !== undefined ? form.value[key] : '';
+                }
+                event.target.value = form.value[key] !== undefined ? form.value[key] : '';
+            }
+
+            // 日期重复校验
+            function isDateDuplicate(date, excludeIndex) {
+                return records.value.some((r, i) => i !== excludeIndex && r.date === date);
+            }
+
+            // 记录操作
+            function openAddModal() {
+                if (configs.value.length === 0) {
+                    showToast('⚠️ 请先添加银行卡');
+                    return;
+                }
+                modalMode.value = 'add';
+                editIndex.value = -1;
+                form.value = getDefaultForm();
+                modalVisible.value = true;
+            }
+
+            function openEditModal(idx) {
+                const item = sortedRecords.value[idx];
+                if (!item) return;
+                const realIdx = records.value.findIndex(r => r.date === item.date);
+                if (realIdx === -1) return;
+                modalMode.value = 'edit';
+                editIndex.value = realIdx;
+                form.value = {...records.value[realIdx]};
+                modalVisible.value = true;
+            }
+
+            function saveRecord() {
+                const f = form.value;
+                if (!f.date) {
+                    showToast('请选择日期');
+                    return;
+                }
+
+                // 日期重复校验
+                const excludeIdx = modalMode.value === 'edit' ? editIndex.value : -1;
+                if (isDateDuplicate(f.date, excludeIdx)) {
+                    showToast('❌ 该日期已有记录，不能重复');
+                    return;
+                }
+
+                // 检查是否有非零金额
+                let hasValue = false;
+                Object.keys(f).forEach(k => {
+                    if (k !== 'date' && Number(f[k]) !== 0) hasValue = true;
+                });
+                if (!hasValue) {
+                    showToast('请至少填写一个金额');
+                    return;
+                }
+
+                const clean = {date: f.date};
+                Object.keys(f).forEach(k => {
+                    if (k !== 'date') {
+                        clean[k] = Number(f[k]) || 0;
+                    }
+                });
+
+                if (modalMode.value === 'add') {
+                    records.value.push(clean);
+                    showToast('✅ 添加成功');
+                } else {
+                    records.value[editIndex.value] = clean;
+                    showToast('✅ 更新成功');
+                }
+                saveData();
+                modalVisible.value = false;
+            }
+
+            function deleteRecord() {
+                if (confirm('确定删除该记录？')) {
+                    records.value.splice(editIndex.value, 1);
+                    saveData();
+                    modalVisible.value = false;
+                    showToast('🗑 已删除');
+                }
+            }
+
+            // 银行卡管理
+            function openBankManager() {
+                bankManagerVisible.value = true;
+            }
+
+            function openAddBankCard() {
+                bankFormMode.value = 'add';
+                bankForm.value = {key: '', label: '', category: ['deposit', 'debt']};
+                editingCardKey.value = '';
+                bankFormVisible.value = true;
+            }
+
+            function openEditBankCard(card) {
+                bankFormMode.value = 'edit';
+                bankForm.value = {...card};
+                editingCardKey.value = card.key;
+                bankFormVisible.value = true;
+            }
+
+            function saveBankCard() {
+                const label = bankForm.value.label.trim();
+                if (!label) {
+                    showToast('请输入名称');
+                    return;
+                }
+                if (bankForm.value.category.length === 0) {
+                    showToast('请至少选择一种类型');
+                    return;
+                }
+
+                // 检查重名（编辑时排除自己）
+                const exist = configs.value.find(f => f.label === label);
+                if (exist && (bankFormMode.value === 'add' || (bankFormMode.value === 'edit' && exist.key !== editingCardKey.value))) {
+                    showToast('名称已存在');
+                    return;
+                }
+
+                if (bankFormMode.value === 'add') {
+                    configs.value.push({
+                        key: generateKey(),
+                        label: label,
+                        category: [...bankForm.value.category],
+                    });
+                    showToast('✅ 银行卡已添加');
+                } else {
+                    const idx = configs.value.findIndex(f => f.key === editingCardKey.value);
+                    if (idx === -1) {
+                        showToast('数据异常');
+                        return;
+                    }
+                    configs.value[idx].label = label;
+                    configs.value[idx].category = [...bankForm.value.category];
+                    showToast('✅ 银行卡已更新');
+                }
+                saveConfig(configs.value);
+                bankFormVisible.value = false;
+            }
+
+            onMounted(() => {
+                loadData();
+            });
+
+            return {
+                records,
+                sortedRecords,
+                modalVisible,
+                modalMode,
+                form,
+                displayFields,
+                allConfigs,
+                editableFields,
+                bankManagerVisible,
+                bankFormVisible,
+                bankFormMode,
+                bankForm,
+                toastMsg,
+
+                getFieldValue,
+                getTotalDeposit,
+                getTotalDebt,
+                getBalance,
+
+                openAddModal,
+                openEditModal,
+                saveRecord,
+                deleteRecord,
+                filterNumber,
+
+                openBankManager,
+                openAddBankCard,
+                openEditBankCard,
+                saveBankCard,
+            };
+        }
+    });
+
+    app.mount('#app');
+</script>
+</body>
+</html>
