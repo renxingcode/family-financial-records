@@ -360,7 +360,7 @@
             <tr v-if="sortedRecords.length === 0">
                 <td colspan="100" class="empty-state">暂无记录</td>
             </tr>
-            <tr v-for="(item, idx) in sortedRecords" :key="item.date">
+            <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
                 <td><a @click="openEditModal(idx)">{{ item.date }}</a></td>
                 <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                     {{ formatNumber(getBalance(item)) }}
@@ -455,6 +455,14 @@
                 </template>
             </div>
         </div>
+    </div>
+
+    <!-- 分页控件 -->
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;">
+        <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
+        <span>{{ currentPage }} / {{ totalPages }}</span>
+        <span style="color:#888;font-size:13px;">共 {{ records.length }} 条</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
     </div>
 
     <!-- 银行卡管理弹窗 -->
@@ -558,6 +566,10 @@
             const records = ref([]);
             const configs = ref(loadConfig());
 
+            // 响应式：分页
+            const currentPage = ref(1);         // 当前页码
+            const pageSize = 10;                // 每页显示记录数
+
             // Toast
             const toastMsg = ref('');
             let toastTimer = null;
@@ -583,6 +595,17 @@
 
             const sortedRecords = computed(() => {
                 return [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+            });
+
+            /**
+             * 分页相关计算
+             * totalPages: 总页数
+             * paginatedRecords: 当前页显示的记录
+             */
+            const totalPages = computed(() => Math.ceil(sortedRecords.value.length / pageSize) || 1);
+            const paginatedRecords = computed(() => {
+                const start = (currentPage.value - 1) * pageSize;
+                return sortedRecords.value.slice(start, start + pageSize);
             });
 
             // 核心函数
@@ -621,6 +644,14 @@
             function formatNumber(num) {
                 if (num === undefined || num === null || isNaN(num)) return num;
                 return Number(num).toLocaleString('en-US');
+            }
+
+            function prevPage() {
+                if (currentPage.value > 1) currentPage.value--;
+            }
+
+            function nextPage() {
+                if (currentPage.value < totalPages.value) currentPage.value++;
             }
 
             // Toast
@@ -850,6 +881,13 @@
                 openAddBankCard,
                 openEditBankCard,
                 saveBankCard,
+
+                // 分页
+                currentPage,
+                totalPages,
+                paginatedRecords,
+                prevPage,
+                nextPage,
             };
         }
     });
