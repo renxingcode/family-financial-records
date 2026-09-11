@@ -49,6 +49,7 @@
 
         table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             background: #fff;
             font-size: 13px;
@@ -315,6 +316,60 @@
             opacity: 1;
         }
 
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 4px 12px;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            background: #e9ecef;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination .page-info {
+            font-size: 13px;
+        }
+
+        .pagination .page-count {
+            color: #888;
+            font-size: 13px;
+        }
+
+        /* 表格列宽 */
+        .col-date {
+            width: 100px;
+        }
+
+        .col-balance {
+            width: 80px;
+        }
+
+        .col-totals {
+            width: 110px;
+        }
+
+        .col-account {
+            width: 100px;
+        }
+
+        .col-remark {
+            width: 120px;
+        }
+
         /* 工具类 */
         .mt-8 {
             margin-top: 8px;
@@ -330,6 +385,32 @@
 
         [v-cloak] {
             display: none;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            .table-wrapper table {
+                font-size: 12px;
+            }
+
+            .table-wrapper th,
+            .table-wrapper td {
+                padding: 4px 4px;
+            }
+
+            .pagination {
+                gap: 6px;
+            }
+
+            .pagination button {
+                padding: 3px 8px;
+                font-size: 12px;
+            }
+
+            .pagination .page-info,
+            .pagination .page-count {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -347,12 +428,19 @@
     <!-- 数据列表 -->
     <div class="table-wrapper">
         <table>
+            <colgroup>
+                <col class="col-date"/>
+                <col class="col-balance"/>
+                <col class="col-totals"/>
+                <col v-for="f in displayFields" :key="f.key" class="col-account"/>
+                <col class="col-remark"/>
+            </colgroup>
             <thead>
             <tr>
                 <th>日期</th>
                 <th>总余额</th>
                 <th>总存款 / 总负债</th>
-                <th v-for="f in displayFields" :key="f.key">{{ f.label }} (存款 / 负债)</th>
+                <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款 / 负债)</th>
                 <th>备注</th>
             </tr>
             </thead>
@@ -458,10 +546,10 @@
     </div>
 
     <!-- 分页控件 -->
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;">
+    <div class="pagination">
         <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
-        <span>{{ currentPage }} / {{ totalPages }}</span>
-        <span style="color:#888;font-size:13px;">共 {{ records.length }} 条</span>
+        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+        <span class="page-count">共 {{ records.length }} 条</span>
         <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
     </div>
 
