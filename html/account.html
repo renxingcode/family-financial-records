@@ -23,8 +23,9 @@
             padding: 4px 12px;
             border: 1px solid #aaa;
             background: #e9ecef;
-            border-radius: 3px;
+            border-radius: 4px;
             font-size: 13px;
+            transition: background 0.2s;
         }
 
         button:hover {
@@ -35,11 +36,28 @@
         textarea {
             font-family: inherit;
             font-size: 14px;
-            padding: 4px 6px;
-            border: 1px solid #aaa;
-            border-radius: 2px;
+            padding: 8px 12px;
+            border: 1.5px solid #e1e5ea;
+            border-radius: 6px;
             width: 100%;
             box-sizing: border-box;
+            background: #fafbfc;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #3498db;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        input:disabled,
+        textarea:disabled {
+            background: #f0f2f5;
+            color: #555;
+            cursor: not-allowed;
         }
 
         textarea {
@@ -136,14 +154,14 @@
             line-height: 1.4;
         }
 
-        /* Modal 通用 */
+        /* Modal */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -153,48 +171,88 @@
 
         .modal-box {
             background: #fff;
-            border: 1px solid #888;
-            padding: 20px 24px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+            padding: 24px 28px;
             width: 100%;
             max-width: 480px;
             max-height: 90vh;
             overflow-y: auto;
+            animation: modalFadeIn 0.25s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         .modal-title {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 16px;
+            color: #1a2a3a;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #f0f2f5;
         }
 
         .modal-title .close-btn {
             background: none;
             border: none;
-            font-size: 22px;
+            font-size: 26px;
             line-height: 1;
+            color: #aaa;
             cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s;
         }
 
+        .modal-title .close-btn:hover {
+            background: #f0f0f0;
+            color: #555;
+        }
+
+        /* 表单 */
         .form-group {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .form-group label {
             display: block;
-            font-weight: 500;
-            margin-bottom: 2px;
+            font-weight: 600;
+            margin-bottom: 4px;
             font-size: 13px;
+            color: #444;
         }
 
-        /* 查看态的只读汇总信息 */
+        .form-divider {
+            margin: 16px 0;
+            border: none;
+            border-top: 1.5px solid #f0f2f5;
+        }
+
+        /* 查看态的只读汇总信息 - 卡片化 */
+        .summary-box {
+            background: #f8f9fc;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 4px;
+        }
+
         .summary-line {
             display: flex;
-            gap: 16px;
+            gap: 20px;
             flex-wrap: wrap;
-            padding: 4px 0;
             font-size: 14px;
         }
 
@@ -204,23 +262,43 @@
             gap: 4px;
         }
 
+        .summary-line .item .label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .summary-line .item .value {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* 按钮 */
         .form-actions {
             display: flex;
-            gap: 8px;
-            margin-top: 16px;
+            gap: 10px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
         .form-actions button {
             flex: 1;
-            padding: 8px 0;
+            padding: 10px 0;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
             min-width: 60px;
+        }
+
+        .form-actions button:active {
+            transform: scale(0.98);
         }
 
         .btn-primary {
             background: #3498db;
             color: #fff;
-            border-color: #2a7fb5;
         }
 
         .btn-primary:hover {
@@ -230,7 +308,6 @@
         .btn-danger {
             background: #e74c3c;
             color: #fff;
-            border-color: #c0392b;
         }
 
         .btn-danger:hover {
@@ -239,7 +316,7 @@
 
         .btn-secondary {
             background: #e9ecef;
-            border-color: #aaa;
+            color: #555;
         }
 
         .btn-secondary:hover {
@@ -286,6 +363,13 @@
             align-items: center;
             gap: 4px;
             font-weight: 400;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            flex-shrink: 0;
         }
 
         /* 空状态 */
@@ -398,6 +482,31 @@
                 padding: 4px 4px;
             }
 
+            .modal-box {
+                padding: 16px 18px;
+                border-radius: 8px;
+            }
+
+            .modal-title {
+                font-size: 17px;
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+            }
+
+            .summary-line {
+                gap: 12px;
+                font-size: 13px;
+            }
+
+            .summary-line .item .value {
+                font-size: 14px;
+            }
+
+            .form-actions button {
+                padding: 8px 0;
+                font-size: 13px;
+            }
+
             .pagination {
                 gap: 6px;
             }
@@ -479,23 +588,25 @@
 
             <!-- 查看态显示汇总信息 -->
             <template v-if="modalMode === 'edit' && !editable">
-                <div class="form-group">
-                    <label>汇总</label>
+                <div class="summary-box">
                     <div class="summary-line">
                         <span class="item">
-                            总余额：<span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                            <span class="label">总余额</span>
+                            <span class="value" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
                                 {{ formatNumber(getBalance(form)) }}
                             </span>
                         </span>
                         <span class="item">
-                            总存款：<span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
+                            <span class="label">总存款</span>
+                            <span class="value text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
                         </span>
                         <span class="item">
-                            总负债：<span class="text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
+                            <span class="label">总负债</span>
+                            <span class="value text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
                         </span>
                     </div>
                 </div>
-                <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
+                <hr class="form-divider">
             </template>
 
             <div class="form-group">
