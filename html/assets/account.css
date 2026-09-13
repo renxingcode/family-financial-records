@@ -1,0 +1,516 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f5f7fa;
+    padding: 20px;
+    color: #222;
+}
+
+button {
+    cursor: pointer;
+    padding: 4px 12px;
+    border: 1px solid #aaa;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #dde0e4;
+}
+
+input,
+textarea {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 12px;
+    border: 1.5px solid #e1e5ea;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fafbfc;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+input:focus,
+textarea:focus {
+    border-color: #3498db;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+input:disabled,
+textarea:disabled {
+    background: #f0f2f5;
+    color: #555;
+    cursor: not-allowed;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 50px;
+}
+
+table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #fff;
+    font-size: 13px;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    background: #e9ecef;
+    font-weight: 600;
+}
+
+a {
+    color: #0066cc;
+    text-decoration: underline dotted;
+    cursor: pointer;
+}
+
+a:hover {
+    color: #003d80;
+}
+
+/* 颜色辅助 */
+.text-green {
+    color: #27ae60;
+}
+
+.text-red {
+    color: #e74c3c;
+}
+
+.text-blue {
+    color: #2980b9;
+}
+
+.text-bold {
+    font-weight: 700;
+}
+
+.text-muted {
+    color: #888;
+    font-size: 12px;
+}
+
+/* 布局 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.header h1 {
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.header-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+/* 备注列 - 最多显示2行，超出截断显示省略号 */
+.remark-cell {
+    max-width: 150px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    padding: 16px;
+}
+
+.modal-box {
+    background: #fff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+    padding: 24px 28px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalFadeIn 0.25s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a2a3a;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f2f5;
+}
+
+.modal-title .close-btn {
+    background: none;
+    border: none;
+    font-size: 26px;
+    line-height: 1;
+    color: #aaa;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.modal-title .close-btn:hover {
+    background: #f0f0f0;
+    color: #555;
+}
+
+/* 表单 */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #444;
+}
+
+.form-divider {
+    margin: 16px 0;
+    border: none;
+    border-top: 1.5px solid #f0f2f5;
+}
+
+/* 查看态的只读汇总信息 - 卡片化 */
+.summary-box {
+    background: #f8f9fc;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 4px;
+}
+
+.summary-line {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 14px;
+}
+
+.summary-line .item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.summary-line .item .label {
+    color: #888;
+    font-size: 13px;
+}
+
+.summary-line .item .value {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* 按钮 */
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.form-actions button {
+    flex: 1;
+    padding: 10px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    min-width: 60px;
+}
+
+.form-actions button:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: #3498db;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #2a7fb5;
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+.btn-secondary {
+    background: #e9ecef;
+    color: #555;
+}
+
+.btn-secondary:hover {
+    background: #dde0e4;
+}
+
+/* 银行卡管理列表 */
+.bank-card-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.bank-card-item:last-child {
+    border-bottom: none;
+}
+
+.bank-card-label {
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.bank-card-types {
+    font-size: 12px;
+    color: #555;
+}
+
+.bank-card-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* 复选框组 */
+.checkbox-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 400;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    flex-shrink: 0;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    color: #999;
+    padding: 24px 0;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.toast.show {
+    opacity: 1;
+}
+
+/* 分页控件 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 4px 12px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background: #e9ecef;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination .page-info {
+    font-size: 13px;
+}
+
+.pagination .page-count {
+    color: #888;
+    font-size: 13px;
+}
+
+/* 表格列宽 */
+.col-date {
+    width: 100px;
+}
+
+.col-balance {
+    width: 80px;
+}
+
+.col-totals {
+    width: 110px;
+}
+
+.col-account {
+    width: 100px;
+}
+
+.col-remark {
+    width: 120px;
+}
+
+/* 工具类 */
+.mt-8 {
+    margin-top: 8px;
+}
+
+.mb-8 {
+    margin-bottom: 8px;
+}
+
+.text-center {
+    text-align: center;
+}
+
+[v-cloak] {
+    display: none;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+    .table-wrapper table {
+        font-size: 12px;
+    }
+
+    .table-wrapper th,
+    .table-wrapper td {
+        padding: 4px 4px;
+    }
+
+    .modal-box {
+        padding: 16px 18px;
+        border-radius: 8px;
+    }
+
+    .modal-title {
+        font-size: 17px;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+
+    .summary-line {
+        gap: 12px;
+        font-size: 13px;
+    }
+
+    .summary-line .item .value {
+        font-size: 14px;
+    }
+
+    .form-actions button {
+        padding: 8px 0;
+        font-size: 13px;
+    }
+
+    .pagination {
+        gap: 6px;
+    }
+
+    .pagination button {
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+
+    .pagination .page-info,
+    .pagination .page-count {
+        font-size: 12px;
+    }
+}
