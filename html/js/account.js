@@ -134,6 +134,62 @@ const app = createApp({
             if (currentPage.value < totalPages.value) currentPage.value++;
         }
 
+        function exportCSV() {
+            if (records.value.length === 0) {
+                showToast('暂无数据');
+                return;
+            }
+
+            // 按日期降序排列
+            const sorted = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+
+            // 1. 构建表头
+            const headers = ['日期', '总余额', '总存款', '总负债'];
+            configs.value.forEach(f => {
+                headers.push(`${f.label}存款`);
+                headers.push(`${f.label}负债`);
+            });
+            headers.push('备注');
+
+            // 2. 构建数据行
+            const rows = sorted.map(item => {
+                const row = [
+                    item.date,
+                    getBalance(item),
+                    getTotalDeposit(item),
+                    getTotalDebt(item),
+                ];
+                configs.value.forEach(f => {
+                    row.push(Number(item[f.key + '_deposit']) || 0);
+                    row.push(Number(item[f.key + '_debt']) || 0);
+                });
+                row.push(item.remark || '');
+                return row;
+            });
+
+            // 3. 拼接 CSV
+            const lines = [headers.join(',')];
+            rows.forEach(row => {
+                const escaped = row.map(val => {
+                    return val;
+                });
+                lines.push(escaped.join(','));
+            });
+
+            // 4. 下载
+            const csv = lines.join('\n');
+            const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `账户数据_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('✅ CSV 导出成功');
+        }
+
         function exportJSON() {
             if (records.value.length === 0 && configs.value.length === 0) {
                 showToast('暂无数据');
@@ -422,6 +478,8 @@ const app = createApp({
             prevPage,
             nextPage,
 
+            // 导出和导入
+            exportCSV,
             exportJSON,
             triggerImport,
             importJSON,

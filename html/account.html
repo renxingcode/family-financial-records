@@ -13,6 +13,7 @@
         <h1>📊 家庭账户</h1>
         <div class="header-actions">
             <button @click="openBankManager">银行卡</button>
+            <button class="btn-export" @click="exportCSV" style="background: yellowgreen;">导出CSV</button>
             <button class="btn-export" @click="exportJSON">导出JSON</button>
             <button class="btn-import" @click="triggerImport">导入JSON</button>
             <button class="btn-primary" @click="openAddModal">添加</button>
