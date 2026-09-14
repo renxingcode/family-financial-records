@@ -104,6 +104,18 @@ const app = createApp({
         }
 
         /**
+         * 计算某条记录与上一条记录的余额差额
+         * @param {number} idx - 当前记录在 sortedRecords 中的索引
+         * @returns {number|null} 差额，如果没有上一条则返回 null
+         */
+        function getDiff(idx) {
+            if (idx === 0 || idx >= sortedRecords.value.length) return null;
+            const current = sortedRecords.value[idx];
+            const prev = sortedRecords.value[idx - 1];
+            return getBalance(current) - getBalance(prev);
+        }
+
+        /**
          * 格式化数字，添加千位分隔符
          * 例如：3200 → "3,200"
          */
@@ -387,6 +399,7 @@ const app = createApp({
             getTotalDeposit,
             getTotalDebt,
             getBalance,
+            getDiff,
             formatNumber,
 
             openAddModal,

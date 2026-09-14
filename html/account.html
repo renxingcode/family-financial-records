@@ -25,6 +25,7 @@
             <colgroup>
                 <col class="col-date"/>
                 <col class="col-balance"/>
+                <col class="col-balance"/>
                 <col class="col-totals"/>
                 <col v-for="f in displayFields" :key="f.key" class="col-account"/>
                 <col class="col-remark"/>
@@ -33,6 +34,7 @@
             <tr>
                 <th>日期</th>
                 <th>总余额</th>
+                <th>对比差额</th>
                 <th>总存款 / 总负债</th>
                 <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款 / 负债)</th>
                 <th>备注</th>
@@ -46,6 +48,9 @@
                 <td><a @click="openEditModal(idx)">{{ item.date }}</a></td>
                 <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                     {{ formatNumber(getBalance(item)) }}
+                </td>
+                <td :class="getDiff(idx) > 0 ? 'text-green' : 'text-red'">
+                    {{ getDiff(idx) !== null ? (getDiff(idx) > 0 ? '+' : '') + formatNumber(getDiff(idx)) : '-' }}
                 </td>
                 <td>
                     <span class="text-blue">{{ formatNumber(getTotalDeposit(item)) }}</span>
