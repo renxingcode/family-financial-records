@@ -49,8 +49,8 @@
                 <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                     {{ formatNumber(getBalance(item)) }}
                 </td>
-                <td :class="getDiff(idx) > 0 ? 'text-green' : 'text-red'">
-                    {{ getDiff(idx) !== null ? (getDiff(idx) > 0 ? '+' : '') + formatNumber(getDiff(idx)) : '-' }}
+                <td :class="getDiff(item, idx) > 0 ? 'text-green' : 'text-red'">
+                    {{ getDiff(item, idx) !== null ? (getDiff(item, idx) > 0 ? '+' : '') + formatNumber(getDiff(item, idx)) : '-' }}
                 </td>
                 <td>
                     <span class="text-blue">{{ formatNumber(getTotalDeposit(item)) }}</span>

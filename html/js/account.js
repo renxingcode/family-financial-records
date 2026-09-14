@@ -104,15 +104,17 @@ const app = createApp({
         }
 
         /**
-         * 计算某条记录与上一条记录的余额差额
-         * @param {number} idx - 当前记录在 sortedRecords 中的索引
-         * @returns {number|null} 差额，如果没有上一条则返回 null
+         * 计算某条记录与上一条记录的余额差额（对比差额）
+         * 上一条指的是"日期更早"的那条记录（因为 sortedRecords 按日期降序排列）
+         * @param {Object} item - 当前记录
+         * @param {number} idxInPage - 当前页中的索引
+         * @returns {number|null} 差额（当前余额 - 上一条余额），如果没有上一条则返回 null
          */
-        function getDiff(idx) {
-            if (idx === 0 || idx >= sortedRecords.value.length) return null;
-            const current = sortedRecords.value[idx];
-            const prev = sortedRecords.value[idx - 1];
-            return getBalance(current) - getBalance(prev);
+        function getDiff(item, idxInPage) {
+            const realIdx = sortedRecords.value.indexOf(item);
+            if (realIdx === -1 || realIdx + 1 >= sortedRecords.value.length) return null;
+            const prev = sortedRecords.value[realIdx + 1];
+            return getBalance(item) - getBalance(prev);
         }
 
         /**
