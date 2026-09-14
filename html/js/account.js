@@ -120,6 +120,58 @@ const app = createApp({
             if (currentPage.value < totalPages.value) currentPage.value++;
         }
 
+        function exportJSON() {
+            if (records.value.length === 0 && configs.value.length === 0) {
+                showToast('暂无数据');
+                return;
+            }
+            const data = {
+                config: configs.value,
+                records: records.value,
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'account.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ 导出成功');
+        }
+
+        function triggerImport() {
+            document.getElementById('fileInput').click();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.records || !Array.isArray(data.records)) {
+                        showToast('❌ 无效的数据格式');
+                        return;
+                    }
+                    // 覆盖配置
+                    if (data.config && Array.isArray(data.config)) {
+                        configs.value = data.config;
+                        saveConfig(configs.value);
+                    }
+                    // 覆盖记录
+                    records.value = data.records;
+                    saveData();
+                    currentPage.value = 1;
+                    showToast('✅ 导入成功');
+                } catch (err) {
+                    showToast('❌ 文件解析失败');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         // Toast
         function showToast(msg) {
             if (toastTimer) clearTimeout(toastTimer);
@@ -354,6 +406,10 @@ const app = createApp({
             paginatedRecords,
             prevPage,
             nextPage,
+
+            exportJSON,
+            triggerImport,
+            importJSON,
         };
     }
 });

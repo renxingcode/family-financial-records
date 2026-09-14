@@ -12,8 +12,10 @@
     <div class="header">
         <h1>📊 家庭账户</h1>
         <div class="header-actions">
-            <button @click="openBankManager">💳 银行卡</button>
-            <button class="btn-primary" @click="openAddModal">＋ 添加</button>
+            <button @click="openBankManager">银行卡</button>
+            <button class="btn-export" @click="exportJSON">导出JSON</button>
+            <button class="btn-import" @click="triggerImport">导入JSON</button>
+            <button class="btn-primary" @click="openAddModal">添加</button>
         </div>
     </div>
 
@@ -206,6 +208,9 @@
             </div>
         </div>
     </div>
+
+    <!-- 隐藏的文件输入框 -->
+    <input type="file" id="fileInput" accept=".json" style="display:none;" @change="importJSON($event)">
 
     <!-- Toast -->
     <div class="toast" :class="{ show: toastMsg }">{{ toastMsg }}</div>
