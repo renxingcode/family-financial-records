@@ -57,7 +57,13 @@ const app = createApp({
         // 计算
         const displayFields = computed(() => configs.value);
         const allConfigs = computed(() => configs.value);
-        const editableFields = computed(() => configs.value);
+        const editableFields = computed(() => {
+            if (modalMode.value === 'add') {
+                return configs.value.filter(f => !f.disabled);
+            } else {
+                return configs.value;
+            }
+        });
 
         const sortedRecords = computed(() => {
             return [...records.value].sort((a, b) => b.date.localeCompare(a.date));
@@ -417,6 +423,7 @@ const app = createApp({
                     key: generateKey(),
                     label: label,
                     category: [...bankForm.value.category],
+                    disabled: false,
                 });
                 showToast('✅ 银行卡已添加');
             } else {
@@ -431,6 +438,18 @@ const app = createApp({
             }
             saveConfig(configs.value);
             bankFormVisible.value = false;
+        }
+
+        function toggleBankCardDisabled(key) {
+            const card = configs.value.find(f => f.key === key);
+            if (!card) return;
+            const newState = !card.disabled;
+            const action = newState ? '禁用' : '启用';
+            if (confirm(`确定要${action}「${card.label}」吗？`)) {
+                card.disabled = newState;
+                saveConfig(configs.value);
+                showToast(`✅ 已${action}「${card.label}」`);
+            }
         }
 
         onMounted(() => {
@@ -470,6 +489,7 @@ const app = createApp({
             openAddBankCard,
             openEditBankCard,
             saveBankCard,
+            toggleBankCardDisabled,
 
             // 分页
             currentPage,

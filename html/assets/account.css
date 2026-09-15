@@ -329,6 +329,17 @@ a:hover {
     border-bottom: none;
 }
 
+.bank-card-disabled {
+    opacity: 0.6;
+    background: #f8f8f8;
+}
+
+.bank-card-disabled .bank-card-label {
+    text-decoration: line-through;
+    color: #999;
+}
+
+
 .bank-card-label {
     font-weight: 500;
     margin-right: 8px;

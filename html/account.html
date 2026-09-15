@@ -167,7 +167,7 @@
             </div>
 
             <div v-if="allConfigs.length === 0" class="empty-state">暂无银行卡，请添加</div>
-            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item">
+            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
                 <div>
                     <span class="bank-card-label">{{ f.label }}</span>
                     <span class="bank-card-types">
@@ -178,6 +178,8 @@
                 </div>
                 <div class="bank-card-actions">
                     <button @click="openEditBankCard(f)">编辑</button>
+                    <button v-if="!f.disabled" @click="toggleBankCardDisabled(f.key)">禁用</button>
+                    <button v-else @click="toggleBankCardDisabled(f.key)">启用</button>
                 </div>
             </div>
 
