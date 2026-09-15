@@ -12,7 +12,7 @@
     <div class="header">
         <h1>📊 家庭账户</h1>
         <div class="header-actions">
-            <button @click="openBankManager">银行卡</button>
+            <button class="btn-bank" @click="openBankManager">银行卡管理</button>
             <button class="btn-export" @click="exportCSV" style="background: yellowgreen;">导出CSV</button>
             <button class="btn-export" @click="exportJSON">导出JSON</button>
             <button class="btn-import" @click="triggerImport">导入JSON</button>
@@ -37,7 +37,7 @@
                 <th>总余额</th>
                 <th>对比差额</th>
                 <th>总存款 / 总负债</th>
-                <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款 / 负债)</th>
+                <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款/负债)</th>
                 <th>备注</th>
             </tr>
             </thead>

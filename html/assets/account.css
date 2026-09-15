@@ -6,23 +6,36 @@
 
 body {
     font-family: system-ui, -apple-system, sans-serif;
-    background: #f5f7fa;
+    background: #f0f2f5;
     padding: 20px;
     color: #222;
 }
 
+/* 按钮基础 */
 button {
     cursor: pointer;
-    padding: 4px 12px;
-    border: 1px solid #aaa;
-    background: #e9ecef;
-    border-radius: 4px;
+    padding: 4px 14px;
+    border: 1px solid #d0d5dd;
+    background: #fff;
+    border-radius: 20px;
     font-size: 13px;
-    transition: background 0.2s;
+    font-weight: 500;
+    transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    color: #333;
 }
 
 button:hover {
-    background: #dde0e4;
+    background: #f0f2f5;
+    border-color: #b0b5bd;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+button:disabled {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 input,
@@ -30,26 +43,25 @@ textarea {
     font-family: inherit;
     font-size: 14px;
     padding: 8px 12px;
-    border: 1.5px solid #e1e5ea;
+    border: 1.5px solid #d0d5dd;
     border-radius: 6px;
     width: 100%;
     box-sizing: border-box;
-    background: #fafbfc;
+    background: #fff;
     transition: border-color 0.2s, box-shadow 0.2s;
     outline: none;
 }
 
 input:focus,
 textarea:focus {
-    border-color: #3498db;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    border-color: #2d7fc1;
+    box-shadow: 0 0 0 3px rgba(45, 127, 193, 0.1);
 }
 
 input:disabled,
 textarea:disabled {
-    background: #f0f2f5;
-    color: #555;
+    background: #f5f6f8;
+    color: #888;
     cursor: not-allowed;
 }
 
@@ -58,48 +70,73 @@ textarea {
     min-height: 50px;
 }
 
+/* 表格 */
 table {
     width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
     background: #fff;
     font-size: 13px;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 th,
 td {
-    border: 1px solid #ccc;
-    padding: 6px 8px;
+    padding: 8px 10px;
     text-align: left;
     vertical-align: middle;
+    border-bottom: 1px solid #edf0f3;
 }
 
 th {
-    background: #e9ecef;
+    background: #f7f8fa;
     font-weight: 600;
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-bottom: 1.5px solid #e2e6ed;
+}
+
+th:first-child,
+td:first-child {
+    padding-left: 14px;
+}
+
+th:last-child,
+td:last-child {
+    padding-right: 14px;
+}
+
+tr:hover td {
+    background: #fafbfc;
 }
 
 a {
     color: #0066cc;
-    text-decoration: underline dotted;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1.5px dashed #0066cc;
     cursor: pointer;
 }
 
 a:hover {
-    color: #003d80;
+    color: #004a99;
+    border-bottom-color: #004a99;
 }
 
 /* 颜色辅助 */
 .text-green {
-    color: #27ae60;
+    color: #1e8e3e;
 }
 
 .text-red {
-    color: #e74c3c;
+    color: #d93025;
 }
 
 .text-blue {
-    color: #2980b9;
+    color: #1a73e8;
 }
 
 .text-bold {
@@ -116,28 +153,83 @@ a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
 }
 
 .header h1 {
-    font-size: 22px;
-    font-weight: 500;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a2a3a;
+    letter-spacing: -0.3px;
 }
 
 .header-actions {
     display: flex;
     gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* 头部各按钮样式 */
+.header-actions .btn-primary {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+    padding: 4px 18px;
+    font-weight: 600;
+}
+
+.header-actions .btn-primary:hover {
+    background: #1557b0;
+    border-color: #1557b0;
+}
+
+.header-actions .btn-export {
+    background: #1e8e3e;
+    color: #fff;
+    border-color: #1e8e3e;
+}
+
+.header-actions .btn-export:hover {
+    background: #166b2e;
+    border-color: #166b2e;
+}
+
+.header-actions .btn-import {
+    background: #e37400;
+    color: #fff;
+    border-color: #e37400;
+}
+
+.header-actions .btn-import:hover {
+    background: #b85d00;
+    border-color: #b85d00;
+}
+
+.header-actions .btn-bank {
+    background: transparent;
+    border: 1.5px solid #d0d5dd;
+    color: #555;
+}
+
+.header-actions .btn-bank:hover {
+    background: #f0f2f5;
+    border-color: #b0b5bd;
 }
 
 .table-wrapper {
     overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    background: #fff;
+    padding: 2px 0;
 }
 
-/* 备注列 - 最多显示2行，超出截断显示省略号 */
+/* 备注列 - 最多2行截断 */
 .remark-cell {
-    max-width: 150px;
+    max-width: 140px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -147,6 +239,14 @@ a:hover {
     line-height: 1.4;
 }
 
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    color: #bbb;
+    padding: 40px 0;
+    font-size: 15px;
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;
@@ -154,31 +254,32 @@ a:hover {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 999;
     padding: 16px;
+    backdrop-filter: blur(2px);
 }
 
 .modal-box {
     background: #fff;
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
-    padding: 24px 28px;
+    border-radius: 16px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+    padding: 28px 32px;
     width: 100%;
     max-width: 480px;
     max-height: 90vh;
     overflow-y: auto;
-    animation: modalFadeIn 0.25s ease;
+    animation: modalFadeIn 0.2s ease;
 }
 
 @keyframes modalFadeIn {
     from {
         opacity: 0;
-        transform: scale(0.96) translateY(10px);
+        transform: scale(0.96) translateY(8px);
     }
     to {
         opacity: 1;
@@ -194,8 +295,8 @@ a:hover {
     font-weight: 600;
     color: #1a2a3a;
     margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f0f2f5;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid #edf0f3;
 }
 
 .modal-title .close-btn {
@@ -206,12 +307,12 @@ a:hover {
     color: #aaa;
     cursor: pointer;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: background 0.2s, color 0.2s;
 }
 
 .modal-title .close-btn:hover {
-    background: #f0f0f0;
+    background: #f0f2f5;
     color: #555;
 }
 
@@ -231,20 +332,20 @@ a:hover {
 .form-divider {
     margin: 16px 0;
     border: none;
-    border-top: 1.5px solid #f0f2f5;
+    border-top: 1.5px solid #edf0f3;
 }
 
-/* 查看态的只读汇总信息 - 卡片化 */
+/* 查看态汇总卡片 */
 .summary-box {
-    background: #f8f9fc;
-    border-radius: 8px;
-    padding: 12px 16px;
+    background: #f7f8fa;
+    border-radius: 10px;
+    padding: 14px 18px;
     margin-bottom: 4px;
 }
 
 .summary-line {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     flex-wrap: wrap;
     font-size: 14px;
 }
@@ -277,43 +378,43 @@ a:hover {
     flex: 1;
     padding: 10px 0;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
     min-width: 60px;
+    background: #f0f2f5;
+    color: #333;
 }
 
-.form-actions button:active {
-    transform: scale(0.98);
+.form-actions button:hover {
+    background: #e2e6ed;
 }
 
-.btn-primary {
-    background: #3498db;
+.form-actions .btn-primary {
+    background: #1a73e8;
     color: #fff;
 }
 
-.btn-primary:hover {
-    background: #2a7fb5;
+.form-actions .btn-primary:hover {
+    background: #1557b0;
 }
 
-.btn-danger {
-    background: #e74c3c;
+.form-actions .btn-danger {
+    background: #d93025;
     color: #fff;
 }
 
-.btn-danger:hover {
-    background: #c0392b;
+.form-actions .btn-danger:hover {
+    background: #b3261e;
 }
 
-.btn-secondary {
-    background: #e9ecef;
+.form-actions .btn-secondary {
+    background: #f0f2f5;
     color: #555;
 }
 
-.btn-secondary:hover {
-    background: #dde0e4;
+.form-actions .btn-secondary:hover {
+    background: #e2e6ed;
 }
 
 /* 银行卡管理列表 */
@@ -321,8 +422,8 @@ a:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px solid #eee;
+    padding: 8px 0;
+    border-bottom: 1px solid #edf0f3;
 }
 
 .bank-card-item:last-child {
@@ -330,15 +431,17 @@ a:hover {
 }
 
 .bank-card-disabled {
-    opacity: 0.6;
-    background: #f8f8f8;
+    opacity: 0.5;
+    background: #fafbfc;
+    border-radius: 6px;
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 .bank-card-disabled .bank-card-label {
     text-decoration: line-through;
     color: #999;
 }
-
 
 .bank-card-label {
     font-weight: 500;
@@ -347,7 +450,7 @@ a:hover {
 
 .bank-card-types {
     font-size: 12px;
-    color: #555;
+    color: #888;
 }
 
 .bank-card-actions {
@@ -358,7 +461,7 @@ a:hover {
 /* 复选框组 */
 .checkbox-group {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     align-items: center;
 }
 
@@ -369,18 +472,53 @@ a:hover {
     font-weight: 400;
     white-space: nowrap;
     cursor: pointer;
+    font-size: 14px;
 }
 
 .checkbox-group input[type="checkbox"] {
     width: auto;
     flex-shrink: 0;
+    accent-color: #1a73e8;
 }
 
-/* 空状态 */
-.empty-state {
-    text-align: center;
-    color: #999;
-    padding: 24px 0;
+/* 分页控件 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 4px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 20px;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #f0f2f5;
+    border-color: #b0b5bd;
+}
+
+.pagination button:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.pagination .page-info {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.pagination .page-count {
+    color: #888;
+    font-size: 13px;
 }
 
 /* Toast */
@@ -391,8 +529,8 @@ a:hover {
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.8);
     color: #fff;
-    padding: 8px 20px;
-    border-radius: 4px;
+    padding: 10px 24px;
+    border-radius: 8px;
     font-size: 14px;
     z-index: 1000;
     pointer-events: none;
@@ -404,50 +542,17 @@ a:hover {
     opacity: 1;
 }
 
-/* 分页控件 */
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-    margin-top: 14px;
-    flex-wrap: wrap;
-}
-
-.pagination button {
-    padding: 4px 12px;
-    border: 1px solid #aaa;
-    border-radius: 3px;
-    background: #e9ecef;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.pagination button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.pagination .page-info {
-    font-size: 13px;
-}
-
-.pagination .page-count {
-    color: #888;
-    font-size: 13px;
-}
-
 /* 表格列宽 */
 .col-date {
-    width: 100px;
+    width: 120px;
 }
 
 .col-balance {
-    width: 80px;
+    width: 90px;
 }
 
 .col-totals {
-    width: 110px;
+    width: 120px;
 }
 
 .col-account {
@@ -471,40 +576,41 @@ a:hover {
     text-align: center;
 }
 
-.btn-export {
-    background: #27ae60;
-    color: #fff;
-    border-color: #1e8449;
-}
-
-.btn-import {
-    background: #f39c12;
-    color: #fff;
-    border-color: #d68910;
-}
-
-.btn-import:hover {
-    background: #d68910;
-}
-
 [v-cloak] {
     display: none;
 }
 
 /* 移动端适配 */
 @media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
+    .header-actions button {
+        font-size: 12px;
+        padding: 3px 10px;
+    }
+
     .table-wrapper table {
         font-size: 12px;
     }
 
     .table-wrapper th,
     .table-wrapper td {
-        padding: 4px 4px;
+        padding: 4px 6px;
     }
 
     .modal-box {
-        padding: 16px 18px;
-        border-radius: 8px;
+        padding: 18px 16px;
+        border-radius: 12px;
     }
 
     .modal-title {
@@ -532,12 +638,32 @@ a:hover {
     }
 
     .pagination button {
-        padding: 3px 8px;
+        padding: 3px 10px;
         font-size: 12px;
     }
 
     .pagination .page-info,
     .pagination .page-count {
         font-size: 12px;
+    }
+
+    .col-date {
+        width: 100px;
+    }
+
+    .col-balance {
+        width: 70px;
+    }
+
+    .col-totals {
+        width: 90px;
+    }
+
+    .col-account {
+        width: 80px;
+    }
+
+    .col-remark {
+        width: 80px;
     }
 }
