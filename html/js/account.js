@@ -1,6 +1,7 @@
 const {createApp, ref, computed, onMounted} = Vue;
 
 // 配置 & 存储
+const VERSION_NUMBER = 1.0;
 var STORAGE_KEYS = {
     RECORDS: 'financial_account_records',
     BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
@@ -201,16 +202,25 @@ const app = createApp({
                 showToast('暂无数据');
                 return;
             }
+
+            // 按日期降序排列
+            const sortedForExport = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+
             const data = {
+                version: VERSION_NUMBER,
+                exportTime: new Date().toISOString(),
                 config: configs.value,
-                records: records.value,
+                records: sortedForExport,
             };
+
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'account.json';
+            a.download = `账户数据_${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast('✅ 导出成功');
         }
