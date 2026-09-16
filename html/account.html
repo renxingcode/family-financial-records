@@ -46,7 +46,7 @@
                 <td colspan="100" class="empty-state">暂无记录</td>
             </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
-                <td><a @click="openEditModal(idx)">{{ item.date }}</a></td>
+                <td><a @click="openEditModal(item, idx)">{{ item.date }}</a></td>
                 <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                     {{ formatNumber(getBalance(item)) }}
                 </td>

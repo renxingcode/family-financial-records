@@ -328,8 +328,7 @@ const app = createApp({
             modalVisible.value = true;
         }
 
-        function openEditModal(idx) {
-            const item = sortedRecords.value[idx];
+        function openEditModal(item, idx) {
             if (!item) return;
             const realIdx = records.value.findIndex(r => r.date === item.date);
             if (realIdx === -1) return;
