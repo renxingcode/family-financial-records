@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭账户</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f0f2f5;
+            padding: 20px;
+            color: #222;
+        }
+
+        /* 按钮基础 */
+        button {
+            cursor: pointer;
+            padding: 4px 14px;
+            border: 1px solid #d0d5dd;
+            background: #fff;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s, border-color 0.2s, transform 0.1s;
+            color: #333;
+        }
+
+        button:hover {
+            background: #f0f2f5;
+            border-color: #b0b5bd;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        input,
+        textarea {
+            font-family: inherit;
+            font-size: 14px;
+            padding: 8px 12px;
+            border: 1.5px solid #d0d5dd;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: #2d7fc1;
+            box-shadow: 0 0 0 3px rgba(45, 127, 193, 0.1);
+        }
+
+        input:disabled,
+        textarea:disabled {
+            background: #f5f6f8;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        /* 表格 */
+        table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 13px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: 1px solid #edf0f3;
+        }
+
+        th {
+            background: #f7f8fa;
+            font-weight: 600;
+            font-size: 12px;
+            color: #555;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            border-bottom: 1.5px solid #e2e6ed;
+        }
+
+        th:first-child,
+        td:first-child {
+            padding-left: 14px;
+        }
+
+        th:last-child,
+        td:last-child {
+            padding-right: 14px;
+        }
+
+        tr:hover td {
+            background: #fafbfc;
+        }
+
+        a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 1.5px dashed #0066cc;
+            cursor: pointer;
+        }
+
+        a:hover {
+            color: #004a99;
+            border-bottom-color: #004a99;
+        }
+
+        /* 颜色辅助 */
+        .text-green {
+            color: #1e8e3e;
+        }
+
+        .text-red {
+            color: #d93025;
+        }
+
+        .text-blue {
+            color: #1a73e8;
+        }
+
+        .text-bold {
+            font-weight: 700;
+        }
+
+        .text-muted {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* 布局 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a2a3a;
+            letter-spacing: -0.3px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* 头部各按钮样式 */
+        .header-actions .btn-primary {
+            background: #1a73e8;
+            color: #fff;
+            border-color: #1a73e8;
+            padding: 4px 18px;
+            font-weight: 600;
+        }
+
+        .header-actions .btn-primary:hover {
+            background: #1557b0;
+            border-color: #1557b0;
+        }
+
+        .header-actions .btn-export {
+            background: #1e8e3e;
+            color: #fff;
+            border-color: #1e8e3e;
+        }
+
+        .header-actions .btn-export:hover {
+            background: #166b2e;
+            border-color: #166b2e;
+        }
+
+        .header-actions .btn-import {
+            background: #e37400;
+            color: #fff;
+            border-color: #e37400;
+        }
+
+        .header-actions .btn-import:hover {
+            background: #b85d00;
+            border-color: #b85d00;
+        }
+
+        .header-actions .btn-bank {
+            background: transparent;
+            border: 1.5px solid #d0d5dd;
+            color: #555;
+        }
+
+        .header-actions .btn-bank:hover {
+            background: #f0f2f5;
+            border-color: #b0b5bd;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            background: #fff;
+            padding: 2px 0;
+        }
+
+        /* 备注列 - 最多2行截断 */
+        .remark-cell {
+            max-width: 140px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            color: #bbb;
+            padding: 40px 0;
+            font-size: 15px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 16px;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-box {
+            background: #fff;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+            padding: 28px 32px;
+            width: 100%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.96) translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a2a3a;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1.5px solid #edf0f3;
+        }
+
+        .modal-title .close-btn {
+            background: none;
+            border: none;
+            font-size: 26px;
+            line-height: 1;
+            color: #aaa;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .modal-title .close-btn:hover {
+            background: #f0f2f5;
+            color: #555;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .form-divider {
+            margin: 16px 0;
+            border: none;
+            border-top: 1.5px solid #edf0f3;
+        }
+
+        /* 查看态汇总卡片 */
+        .summary-box {
+            background: #f7f8fa;
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 4px;
+        }
+
+        .summary-line {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-size: 14px;
+        }
+
+        .summary-line .item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .summary-line .item .label {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .summary-line .item .value {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        /* 按钮 */
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-actions button {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 60px;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        .form-actions button:hover {
+            background: #e2e6ed;
+        }
+
+        .form-actions .btn-primary {
+            background: #1a73e8;
+            color: #fff;
+        }
+
+        .form-actions .btn-primary:hover {
+            background: #1557b0;
+        }
+
+        .form-actions .btn-danger {
+            background: #d93025;
+            color: #fff;
+        }
+
+        .form-actions .btn-danger:hover {
+            background: #b3261e;
+        }
+
+        .form-actions .btn-secondary {
+            background: #f0f2f5;
+            color: #555;
+        }
+
+        .form-actions .btn-secondary:hover {
+            background: #e2e6ed;
+        }
+
+        /* 银行卡管理列表 */
+        .bank-card-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #edf0f3;
+        }
+
+        .bank-card-item:last-child {
+            border-bottom: none;
+        }
+
+        .bank-card-disabled {
+            opacity: 0.5;
+            background: #fafbfc;
+            border-radius: 6px;
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
+        .bank-card-disabled .bank-card-label {
+            text-decoration: line-through;
+            color: #999;
+        }
+
+        .bank-card-label {
+            font-weight: 500;
+            margin-right: 8px;
+        }
+
+        .bank-card-types {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .bank-card-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* 复选框组 */
+        .checkbox-group {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 400;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            flex-shrink: 0;
+            accent-color: #1a73e8;
+        }
+
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 4px 14px;
+            border: 1px solid #d0d5dd;
+            border-radius: 20px;
+            background: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f0f2f5;
+            border-color: #b0b5bd;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .pagination .page-info {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .pagination .page-count {
+            color: #888;
+            font-size: 13px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 表格列宽 */
+        .col-date {
+            width: 120px;
+        }
+
+        .col-balance {
+            width: 90px;
+        }
+
+        .col-totals {
+            width: 120px;
+        }
+
+        .col-account {
+            width: 100px;
+        }
+
+        .col-remark {
+            width: 120px;
+        }
+
+        /* 工具类 */
+        .mt-8 {
+            margin-top: 8px;
+        }
+
+        .mb-8 {
+            margin-bottom: 8px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .header-actions {
+                gap: 4px;
+            }
+
+            .header-actions button {
+                font-size: 12px;
+                padding: 3px 10px;
+            }
+
+            .table-wrapper table {
+                font-size: 12px;
+            }
+
+            .table-wrapper th,
+            .table-wrapper td {
+                padding: 4px 6px;
+            }
+
+            .modal-box {
+                padding: 18px 16px;
+                border-radius: 12px;
+            }
+
+            .modal-title {
+                font-size: 17px;
+                margin-bottom: 14px;
+                padding-bottom: 10px;
+            }
+
+            .summary-line {
+                gap: 12px;
+                font-size: 13px;
+            }
+
+            .summary-line .item .value {
+                font-size: 14px;
+            }
+
+            .form-actions button {
+                padding: 8px 0;
+                font-size: 13px;
+            }
+
+            .pagination {
+                gap: 6px;
+            }
+
+            .pagination button {
+                padding: 3px 10px;
+                font-size: 12px;
+            }
+
+            .pagination .page-info,
+            .pagination .page-count {
+                font-size: 12px;
+            }
+
+            .col-date {
+                width: 100px;
+            }
+
+            .col-balance {
+                width: 70px;
+            }
+
+            .col-totals {
+                width: 90px;
+            }
+
+            .col-account {
+                width: 80px;
+            }
+
+            .col-remark {
+                width: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-cloak>
+    <!-- 头部 -->
+    <div class="header">
+        <h1>📊 家庭账户</h1>
+        <div class="header-actions">
+            <button class="btn-bank" @click="openBankManager">银行卡管理</button>
+            <button class="btn-export" @click="exportCSV" style="background: yellowgreen;">导出CSV</button>
+            <button class="btn-export" @click="exportJSON">导出JSON</button>
+            <button class="btn-import" @click="triggerImport">导入JSON</button>
+            <button class="btn-primary" @click="openAddModal">添加</button>
+        </div>
+    </div>
+
+    <!-- 数据列表 -->
+    <div class="table-wrapper">
+        <table>
+            <colgroup>
+                <col class="col-date"/>
+                <col class="col-balance"/>
+                <col class="col-balance"/>
+                <col class="col-totals"/>
+                <col v-for="f in displayFields" :key="f.key" class="col-account"/>
+                <col class="col-remark"/>
+            </colgroup>
+            <thead>
+            <tr>
+                <th>日期</th>
+                <th>总余额</th>
+                <th>对比差额</th>
+                <th>总存款 / 总负债</th>
+                <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款/负债)</th>
+                <th>备注</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="sortedRecords.length === 0">
+                <td colspan="100" class="empty-state">暂无记录</td>
+            </tr>
+            <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
+                <td><a @click="openEditModal(item, idx)">{{ item.date }}</a></td>
+                <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
+                    {{ formatNumber(getBalance(item)) }}
+                </td>
+                <td :class="getDiff(item, idx) > 0 ? 'text-green' : 'text-red'">
+                    {{ getDiff(item, idx) !== null ? (getDiff(item, idx) > 0 ? '+' : '') + formatNumber(getDiff(item, idx)) : '-' }}
+                </td>
+                <td>
+                    <span class="text-blue">{{ formatNumber(getTotalDeposit(item)) }}</span>
+                    <span style="color:#bbb;margin:0 2px;">/</span>
+                    <span class="text-red">{{ formatNumber(getTotalDebt(item)) }}</span>
+                </td>
+                <td v-for="f in displayFields" :key="f.key">
+                    <span class="text-blue">{{ formatNumber(getFieldValue(item, f, 'deposit')) }}</span>
+                    <span style="color:#bbb;margin:0 2px;">/</span>
+                    <span class="text-red">{{ formatNumber(getFieldValue(item, f, 'debt')) }}</span>
+                </td>
+                <td class="remark-cell">{{ item.remark || '-' }}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 添加/编辑弹窗 -->
+    <div v-if="modalVisible" class="modal-overlay" @click.self="modalVisible = false">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span>{{ modalMode === 'add' ? '添加记录' : '编辑记录' }}</span>
+                <button class="close-btn" @click="modalVisible = false">✕</button>
+            </div>
+
+            <!-- 查看态显示汇总信息 -->
+            <template v-if="modalMode === 'edit' && !editable">
+                <div class="summary-box">
+                    <div class="summary-line">
+                        <span class="item">
+                            <span class="label">总余额</span>
+                            <span class="value" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                                {{ formatNumber(getBalance(form)) }}
+                            </span>
+                        </span>
+                        <span class="item">
+                            <span class="label">总存款</span>
+                            <span class="value text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
+                        </span>
+                        <span class="item">
+                            <span class="label">总负债</span>
+                            <span class="value text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
+                        </span>
+                    </div>
+                </div>
+                <hr class="form-divider">
+            </template>
+
+            <div class="form-group">
+                <label>日期</label>
+                <input type="date" v-model="form.date" :disabled="modalMode === 'edit' && !editable"/>
+            </div>
+
+            <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
+
+            <template v-for="f in editableFields" :key="f.key">
+                <div class="form-group" v-if="f.category.includes('deposit')">
+                    <label>{{ f.label }} 存款</label>
+                    <input type="text" :value="form[f.key + '_deposit']"
+                           @input="filterNumber(f.key + '_deposit', $event)"
+                           placeholder="金额"
+                           :disabled="modalMode === 'edit' && !editable"/>
+                </div>
+                <div class="form-group" v-if="f.category.includes('debt')">
+                    <label>{{ f.label }} 负债</label>
+                    <input type="text" :value="form[f.key + '_debt']"
+                           @input="filterNumber(f.key + '_debt', $event)"
+                           placeholder="金额"
+                           :disabled="modalMode === 'edit' && !editable"/>
+                </div>
+            </template>
+
+            <!-- 备注 -->
+            <div class="form-group">
+                <label>备注</label>
+                <textarea v-model="form.remark" placeholder="可选备注"
+                          :disabled="modalMode === 'edit' && !editable"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" @click="modalVisible = false">关闭</button>
+                <!-- 查看态：显示 编辑 + 删除 -->
+                <template v-if="modalMode === 'edit' && !editable">
+                    <button class="btn-primary" @click="editable = true">编辑</button>
+                    <button class="btn-danger" @click="deleteRecord">删除</button>
+                </template>
+                <!-- 编辑态 / 添加态 -->
+                <template v-else>
+                    <button class="btn-primary" @click="saveRecord">保存</button>
+                    <button v-if="modalMode === 'edit'" class="btn-danger" @click="deleteRecord">删除</button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分页控件 -->
+    <div class="pagination">
+        <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
+        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+        <span class="page-count">共 {{ records.length }} 条</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
+    </div>
+
+    <!-- 银行卡管理弹窗 -->
+    <div v-if="bankManagerVisible" class="modal-overlay" @click.self="bankManagerVisible = false">
+        <div class="modal-box" style="max-width:520px;">
+            <div class="modal-title">
+                <span>💳 银行卡管理</span>
+                <div>
+                    <button class="btn-primary" @click="openAddBankCard" style="margin-right:6px;">＋ 新增</button>
+                    <button class="close-btn" @click="bankManagerVisible = false">✕</button>
+                </div>
+            </div>
+
+            <div v-if="allConfigs.length === 0" class="empty-state">暂无银行卡，请添加</div>
+            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+                <div>
+                    <span class="bank-card-label">{{ f.label }}</span>
+                    <span class="bank-card-types">
+                        ({{ f.category.includes('deposit') ? '存款' : ''
+                        }}{{ f.category.includes('debt') && f.category.includes('deposit') ? '、' : ''
+                        }}{{ f.category.includes('debt') ? '负债' : '' }})
+                    </span>
+                </div>
+                <div class="bank-card-actions">
+                    <button @click="openEditBankCard(f)">编辑</button>
+                    <button v-if="!f.disabled" @click="toggleBankCardDisabled(f.key)">禁用</button>
+                    <button v-else @click="toggleBankCardDisabled(f.key)">启用</button>
+                </div>
+            </div>
+
+            <div class="form-actions" style="margin-top:12px;">
+                <button class="btn-secondary" @click="bankManagerVisible = false">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/编辑银行卡子弹窗 -->
+    <div v-if="bankFormVisible" class="modal-overlay" @click.self="bankFormVisible = false">
+        <div class="modal-box" style="max-width:400px;">
+            <div class="modal-title">
+                <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
+                <button class="close-btn" @click="bankFormVisible = false">✕</button>
+            </div>
+
+            <div class="form-group">
+                <label>显示名称</label>
+                <input v-model="bankForm.label" placeholder="如：招商银行"/>
+            </div>
+
+            <div class="form-group">
+                <label>类型</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" v-model="bankForm.category" value="deposit"> 存款</label>
+                    <label><input type="checkbox" v-model="bankForm.category" value="debt"> 负债</label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" @click="bankFormVisible = false">取消</button>
+                <button class="btn-primary" @click="saveBankCard">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入框 -->
+    <input type="file" id="fileInput" accept=".json" style="display:none;" @change="importJSON($event)">
+
+    <!-- Toast -->
+    <div class="toast" :class="{ show: toastMsg }">{{ toastMsg }}</div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+    const {createApp, ref, computed, onMounted} = Vue;
+
+    // 配置 & 存储
+    const VERSION_NUMBER = 1.0;
+    var STORAGE_KEYS = {
+        RECORDS: 'financial_account_records',
+        BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
+    };
+
+    function loadConfig() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (Array.isArray(data) && data.length) return data;
+            }
+        } catch (_) {
+        }
+        return [];
+    }
+
+    function saveConfig(config) {
+        localStorage.setItem(STORAGE_KEYS.BANK_CARD_CONFIGS, JSON.stringify(config));
+    }
+
+    function generateKey() {
+        return 'card_' + Date.now();
+    }
+
+    const app = createApp({
+        setup() {
+            // 数据
+            const records = ref([]);
+            const configs = ref(loadConfig());
+
+            // 响应式：分页
+            const currentPage = ref(1);         // 当前页码
+            const pageSize = 10;                // 每页显示记录数
+
+            // Toast
+            const toastMsg = ref('');
+            let toastTimer = null;
+
+            // 记录弹窗
+            const modalVisible = ref(false);
+            const modalMode = ref('add');   // 'add' | 'edit'
+            const editable = ref(false);    // 编辑态（true）还是查看态（false）
+            const editIndex = ref(-1);
+            const form = ref({});
+
+            // 银行卡管理
+            const bankManagerVisible = ref(false);
+            const bankFormVisible = ref(false);
+            const bankFormMode = ref('add');  // 'add' | 'edit'
+            const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
+            const editingCardKey = ref('');
+
+            // 计算
+            const displayFields = computed(() => configs.value);
+            const allConfigs = computed(() => configs.value);
+            const editableFields = computed(() => {
+                if (modalMode.value === 'add') {
+                    return configs.value.filter(f => !f.disabled);
+                } else {
+                    return configs.value;
+                }
+            });
+
+            const sortedRecords = computed(() => {
+                return [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+            });
+
+            /**
+             * 分页相关计算
+             * totalPages: 总页数
+             * paginatedRecords: 当前页显示的记录
+             */
+            const totalPages = computed(() => Math.ceil(sortedRecords.value.length / pageSize) || 1);
+            const paginatedRecords = computed(() => {
+                const start = (currentPage.value - 1) * pageSize;
+                return sortedRecords.value.slice(start, start + pageSize);
+            });
+
+            // 核心函数
+            function getFieldValue(item, f, type) {
+                return Number(item[f.key + '_' + type]) || 0;
+            }
+
+            function getTotalDeposit(item) {
+                let sum = 0;
+                configs.value.forEach(f => {
+                    if (f.category.includes('deposit')) {
+                        sum += Number(item[f.key + '_deposit']) || 0;
+                    }
+                });
+                return sum;
+            }
+
+            function getTotalDebt(item) {
+                let sum = 0;
+                configs.value.forEach(f => {
+                    if (f.category.includes('debt')) {
+                        sum += Number(item[f.key + '_debt']) || 0;
+                    }
+                });
+                return sum;
+            }
+
+            function getBalance(item) {
+                return getTotalDeposit(item) - getTotalDebt(item);
+            }
+
+            /**
+             * 计算某条记录与上一条记录的余额差额（对比差额）
+             * 上一条指的是"日期更早"的那条记录（因为 sortedRecords 按日期降序排列）
+             * @param {Object} item - 当前记录
+             * @param {number} idxInPage - 当前页中的索引
+             * @returns {number|null} 差额（当前余额 - 上一条余额），如果没有上一条则返回 null
+             */
+            function getDiff(item, idxInPage) {
+                const realIdx = sortedRecords.value.indexOf(item);
+                if (realIdx === -1 || realIdx + 1 >= sortedRecords.value.length) return null;
+                const prev = sortedRecords.value[realIdx + 1];
+                return getBalance(item) - getBalance(prev);
+            }
+
+            /**
+             * 格式化数字，添加千位分隔符
+             * 例如：3200 → "3,200"
+             */
+            function formatNumber(num) {
+                if (num === undefined || num === null || isNaN(num)) return num;
+                return Number(num).toLocaleString('en-US');
+            }
+
+            function prevPage() {
+                if (currentPage.value > 1) currentPage.value--;
+            }
+
+            function nextPage() {
+                if (currentPage.value < totalPages.value) currentPage.value++;
+            }
+
+            function exportCSV() {
+                if (records.value.length === 0) {
+                    showToast('暂无数据');
+                    return;
+                }
+
+                // 按日期降序排列
+                const sorted = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+
+                // 1. 构建表头
+                const headers = ['日期', '总余额', '总存款', '总负债'];
+                configs.value.forEach(f => {
+                    headers.push(`${f.label}存款`);
+                    headers.push(`${f.label}负债`);
+                });
+                headers.push('备注');
+
+                // 2. 构建数据行
+                const rows = sorted.map(item => {
+                    const row = [
+                        item.date,
+                        getBalance(item),
+                        getTotalDeposit(item),
+                        getTotalDebt(item),
+                    ];
+                    configs.value.forEach(f => {
+                        row.push(Number(item[f.key + '_deposit']) || 0);
+                        row.push(Number(item[f.key + '_debt']) || 0);
+                    });
+                    row.push(item.remark || '');
+                    return row;
+                });
+
+                // 3. 拼接 CSV
+                const lines = [headers.join(',')];
+                rows.forEach(row => {
+                    const escaped = row.map(val => {
+                        return val;
+                    });
+                    lines.push(escaped.join(','));
+                });
+
+                // 4. 下载
+                const csv = lines.join('\n');
+                const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `账户数据_${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('✅ CSV 导出成功');
+            }
+
+            function exportJSON() {
+                if (records.value.length === 0 && configs.value.length === 0) {
+                    showToast('暂无数据');
+                    return;
+                }
+
+                // 按日期降序排列
+                const sortedForExport = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
+
+                const data = {
+                    version: VERSION_NUMBER,
+                    exportTime: new Date().toISOString(),
+                    config: configs.value,
+                    records: sortedForExport,
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `账户数据_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('✅ 导出成功');
+            }
+
+            function triggerImport() {
+                document.getElementById('fileInput').click();
+            }
+
+            function importJSON(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.records || !Array.isArray(data.records)) {
+                            showToast('❌ 无效的数据格式');
+                            return;
+                        }
+                        // 覆盖配置
+                        if (data.config && Array.isArray(data.config)) {
+                            configs.value = data.config;
+                            saveConfig(configs.value);
+                        }
+                        // 覆盖记录
+                        records.value = data.records;
+                        saveData();
+                        currentPage.value = 1;
+                        showToast('✅ 导入成功');
+                    } catch (err) {
+                        showToast('❌ 文件解析失败');
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            }
+
+            // Toast
+            function showToast(msg) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toastMsg.value = msg;
+                toastTimer = setTimeout(() => {
+                    toastMsg.value = '';
+                    toastTimer = null;
+                }, 2000);
+            }
+
+            // 数据持久化
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.RECORDS);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        if (Array.isArray(data)) records.value = data;
+                    }
+                } catch (_) {
+                }
+            }
+
+            function saveData() {
+                localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records.value));
+            }
+
+            // 表单工具
+            function getDefaultForm() {
+                const f = {date: '', remark: ''};
+                configs.value.forEach(c => {
+                    if (c.category.includes('deposit')) f[c.key + '_deposit'] = '';
+                    if (c.category.includes('debt')) f[c.key + '_debt'] = '';
+                });
+                const now = new Date();
+                f.date = now.getFullYear() + '-' +
+                    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(now.getDate()).padStart(2, '0');
+                return f;
+            }
+
+            function filterNumber(key, event) {
+                let val = event.target.value.replace(/[^0-9]/g, '');
+                if (val === '') {
+                    form.value[key] = '';
+                } else {
+                    const num = Number(val);
+                    if (!isNaN(num) && num >= 0) form.value[key] = num;
+                    else event.target.value = form.value[key] !== undefined ? form.value[key] : '';
+                }
+                event.target.value = form.value[key] !== undefined ? form.value[key] : '';
+            }
+
+            // 日期重复校验
+            function isDateDuplicate(date, excludeIndex) {
+                return records.value.some((r, i) => i !== excludeIndex && r.date === date);
+            }
+
+            // 记录操作
+            function openAddModal() {
+                if (configs.value.length === 0) {
+                    showToast('⚠️ 请先添加银行卡');
+                    return;
+                }
+                modalMode.value = 'add';
+                editable.value = true;
+                editIndex.value = -1;
+                form.value = getDefaultForm();
+                modalVisible.value = true;
+            }
+
+            function openEditModal(item, idx) {
+                if (!item) return;
+                const realIdx = records.value.findIndex(r => r.date === item.date);
+                if (realIdx === -1) return;
+                modalMode.value = 'edit';
+                editable.value = false; // 默认查看态
+                editIndex.value = realIdx;
+                form.value = {...records.value[realIdx]};
+                modalVisible.value = true;
+            }
+
+            function saveRecord() {
+                const f = form.value;
+                if (!f.date) {
+                    showToast('请选择日期');
+                    return;
+                }
+
+                // 日期重复校验
+                const excludeIdx = modalMode.value === 'edit' ? editIndex.value : -1;
+                if (isDateDuplicate(f.date, excludeIdx)) {
+                    showToast('❌ 该日期已有记录，不能重复');
+                    return;
+                }
+
+                // 检查是否有非零金额
+                let hasValue = false;
+                Object.keys(f).forEach(k => {
+                    if (k !== 'date' && k !== 'remark' && Number(f[k]) !== 0) hasValue = true;
+                });
+                if (!hasValue && !f.remark) {
+                    showToast('请至少填写一个金额或备注');
+                    return;
+                }
+
+                const clean = {date: f.date, remark: f.remark || ''};
+                Object.keys(f).forEach(k => {
+                    if (k !== 'date' && k !== 'remark') {
+                        clean[k] = Number(f[k]) || 0;
+                    }
+                });
+
+                if (modalMode.value === 'add') {
+                    records.value.push(clean);
+                    showToast('✅ 添加成功');
+                } else {
+                    records.value[editIndex.value] = clean;
+                    showToast('✅ 更新成功');
+                }
+                saveData();
+                modalVisible.value = false;
+            }
+
+            function deleteRecord() {
+                if (confirm('确定删除该记录？')) {
+                    records.value.splice(editIndex.value, 1);
+                    saveData();
+                    modalVisible.value = false;
+                    showToast('🗑 已删除');
+                }
+            }
+
+            // 银行卡管理
+            function openBankManager() {
+                bankManagerVisible.value = true;
+            }
+
+            function openAddBankCard() {
+                bankFormMode.value = 'add';
+                bankForm.value = {key: '', label: '', category: ['deposit', 'debt']};
+                editingCardKey.value = '';
+                bankFormVisible.value = true;
+            }
+
+            function openEditBankCard(card) {
+                bankFormMode.value = 'edit';
+                bankForm.value = {...card};
+                editingCardKey.value = card.key;
+                bankFormVisible.value = true;
+            }
+
+            function saveBankCard() {
+                const label = bankForm.value.label.trim();
+                if (!label) {
+                    showToast('请输入名称');
+                    return;
+                }
+                if (bankForm.value.category.length === 0) {
+                    showToast('请至少选择一种类型');
+                    return;
+                }
+
+                // 检查重名（编辑时排除自己）
+                const exist = configs.value.find(f => f.label === label);
+                if (exist && (bankFormMode.value === 'add' || (bankFormMode.value === 'edit' && exist.key !== editingCardKey.value))) {
+                    showToast('名称已存在');
+                    return;
+                }
+
+                if (bankFormMode.value === 'add') {
+                    configs.value.push({
+                        key: generateKey(),
+                        label: label,
+                        category: [...bankForm.value.category],
+                        disabled: false,
+                    });
+                    showToast('✅ 银行卡已添加');
+                } else {
+                    const idx = configs.value.findIndex(f => f.key === editingCardKey.value);
+                    if (idx === -1) {
+                        showToast('数据异常');
+                        return;
+                    }
+                    configs.value[idx].label = label;
+                    configs.value[idx].category = [...bankForm.value.category];
+                    showToast('✅ 银行卡已更新');
+                }
+                saveConfig(configs.value);
+                bankFormVisible.value = false;
+            }
+
+            function toggleBankCardDisabled(key) {
+                const card = configs.value.find(f => f.key === key);
+                if (!card) return;
+                const newState = !card.disabled;
+                const action = newState ? '禁用' : '启用';
+                if (confirm(`确定要${action}「${card.label}」吗？`)) {
+                    card.disabled = newState;
+                    saveConfig(configs.value);
+                    showToast(`✅ 已${action}「${card.label}」`);
+                }
+            }
+
+            onMounted(() => {
+                loadData();
+            });
+
+            return {
+                records,
+                sortedRecords,
+                modalVisible,
+                modalMode,
+                editable,
+                form,
+                displayFields,
+                allConfigs,
+                editableFields,
+                bankManagerVisible,
+                bankFormVisible,
+                bankFormMode,
+                bankForm,
+                toastMsg,
+
+                getFieldValue,
+                getTotalDeposit,
+                getTotalDebt,
+                getBalance,
+                getDiff,
+                formatNumber,
+
+                openAddModal,
+                openEditModal,
+                saveRecord,
+                deleteRecord,
+                filterNumber,
+
+                openBankManager,
+                openAddBankCard,
+                openEditBankCard,
+                saveBankCard,
+                toggleBankCardDisabled,
+
+                // 分页
+                currentPage,
+                totalPages,
+                paginatedRecords,
+                prevPage,
+                nextPage,
+
+                // 导出和导入
+                exportCSV,
+                exportJSON,
+                triggerImport,
+                importJSON,
+            };
+        }
+    });
+
+    app.mount('#app');
+</script>
+</body>
+</html>
