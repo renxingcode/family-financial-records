@@ -13,24 +13,34 @@
 - **对比差额列**：列表展示每条记录相对上一次统计的总余额变化，正数绿色带 `+`、负数红色带 `-`
 - **导入 / 导出JSON**：一键导出完整数据（银行卡配置 + 账户记录）为 JSON 文件，文件名带日期；支持导入，便于定期备份与数据迁移
 - **导出CSV表格**：将账户记录导出为 CSV 文件，可用 Excel / 表格软件打开
-- **Mock 示例数据**：内置 `data/account_mock.json` 示例数据，可一键导入快速预览完整功能
+- **Mock 示例数据**：内置 `html_single/account_mock.json` 示例数据，可一键导入快速预览完整功能
 - **移动端适配**：窄屏下表格、弹窗、分页控件自动收敛，手机浏览友好
 
 ## 快速开始
 
 1. 直接用浏览器打开 `html/account.html`（支持 `file://` 协议，无需启动服务器）
-2. 首次使用：先添加银行卡，再添加账户记录；也可以直接导入 `data/account_mock.json` 体验完整效果
-3. 数据保存在浏览器 **LocalStorage** 中，建议定期**导出JSON**备份
+2. 首次使用：先添加银行卡，再添加账户记录；也可以直接导入 `html_single/account_mock.json` 体验完整效果
+3. 如果手机浏览器不支持 `file://` 协议，建议使用 `html_single/account.html` 单文件版（支持 `content://` 协议）
+4. 数据保存在浏览器 **LocalStorage** 中，建议定期**导出JSON**备份
 
 ## 目录结构
 
 ```
-html/
-├── account.html          # 页面结构
-├── assets/account.css    # 样式
-└── js/account.js         # 逻辑（Vue 3 全局构建版）
-data/
-└── account_mock.json     # Mock 示例数据（可导入预览）
+family-financial-records/
+├── html/                          # 多文件版（CSS/JS 分离，file:// 协议可直接打开）
+│   ├── account.html               # 页面结构
+│   ├── assets/
+│   │   └── account.css            # 样式
+│   └── js/
+│       └── account.js             # 逻辑（Vue 3 全局构建版）
+├── html_single/                   # 单文件版（CSS/JS 内联，便于手机查看）
+│   ├── account.html               # 单文件版页面
+│   ├── account_mock.json          # Mock 示例数据（可导入预览）
+├── AGENTS.md                      # AI助手协作约定
+├── CHANGELOG.md                   # 更新日志
+├── LICENSE                        # 开源协议（Apache License 2.0）
+├── NOTICE                         # 版权声明
+└── README.md                      # 项目说明
 ```
 
 ## 数据说明

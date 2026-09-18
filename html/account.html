@@ -2,82 +2,94 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家庭账户</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>家庭账户管理</title>
     <link rel="stylesheet" href="assets/account.css">
 </head>
 <body>
 <div id="app" v-cloak>
+
     <!-- 头部 -->
-    <div class="header">
+    <div class="app-header">
         <h1>📊 家庭账户</h1>
         <div class="header-actions">
-            <button class="btn-bank" @click="openBankManager">银行卡管理</button>
-            <button class="btn-export" @click="exportCSV" style="background: yellowgreen;">导出CSV</button>
-            <button class="btn-export" @click="exportJSON">导出JSON</button>
-            <button class="btn-import" @click="triggerImport">导入JSON</button>
-            <button class="btn-primary" @click="openAddModal">添加</button>
+            <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
+            <button class="btn-bank" @click="openBankManager">💳 银行卡管理</button>
+            <button class="btn-add" @click="openAddModal">＋ 添加</button>
         </div>
     </div>
+
+    <!-- 操作栏 -->
+    <div class="action-bar">
+        <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
+        <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
+        <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
+    </div>
+    <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
 
     <!-- 数据列表 -->
     <div class="table-wrapper">
         <table>
-            <colgroup>
-                <col class="col-date"/>
-                <col class="col-balance"/>
-                <col class="col-balance"/>
-                <col class="col-totals"/>
-                <col v-for="f in displayFields" :key="f.key" class="col-account"/>
-                <col class="col-remark"/>
-            </colgroup>
             <thead>
             <tr>
                 <th>日期</th>
                 <th>总余额</th>
-                <th>对比差额</th>
-                <th>总存款 / 总负债</th>
-                <th v-for="f in displayFields" :key="f.key">{{ f.label }} <br> (存款/负债)</th>
+                <th>对比上次差额</th>
+                <th>总存款</th>
+                <th>总负债</th>
+                <th v-for="f in displayFields" :key="f.key">{{ f.label }}</th>
                 <th>备注</th>
             </tr>
             </thead>
             <tbody>
-            <tr v-if="sortedRecords.length === 0">
-                <td colspan="100" class="empty-state">暂无记录</td>
+            <tr v-if="paginatedRecords.length === 0">
+                <td colspan="100" class="empty-cell" style="text-align:center;padding:30px 0;color:#bbb;">暂无记录</td>
             </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
-                <td><a @click="openEditModal(item, idx)">{{ item.date }}</a></td>
+                <!-- 日期 -->
+                <td class="clickable-date" @click="openEditModal(item, idx)">{{ item.date }}</td>
+                <!-- 总余额（正负分色） -->
                 <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                     {{ formatNumber(getBalance(item)) }}
                 </td>
-                <td :class="getDiff(item, idx) > 0 ? 'text-green' : 'text-red'">
-                    {{ getDiff(item, idx) !== null ? (getDiff(item, idx) > 0 ? '+' : '') + formatNumber(getDiff(item, idx)) : '-' }}
+                <!-- 对比上次差额 -->
+                <td :class="getDiff(item, idx) !== null ? (getDiff(item, idx) >= 0 ? 'text-green-a' : 'text-red-a') : ''">
+                    {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
                 </td>
-                <td>
-                    <span class="text-blue">{{ formatNumber(getTotalDeposit(item)) }}</span>
-                    <span style="color:#bbb;margin:0 2px;">/</span>
-                    <span class="text-red">{{ formatNumber(getTotalDebt(item)) }}</span>
-                </td>
+                <!-- 总存款 -->
+                <td class="text-blue text-bold">{{ formatNumber(getTotalDeposit(item)) }}</td>
+                <!-- 总负债 -->
+                <td class="text-red text-bold">{{ formatNumber(getTotalDebt(item)) }}</td>
+                <!-- 各银行卡列（存款/负债） -->
                 <td v-for="f in displayFields" :key="f.key">
                     <span class="text-blue">{{ formatNumber(getFieldValue(item, f, 'deposit')) }}</span>
                     <span style="color:#bbb;margin:0 2px;">/</span>
                     <span class="text-red">{{ formatNumber(getFieldValue(item, f, 'debt')) }}</span>
                 </td>
+                <!-- 备注（最多2行截断） -->
                 <td class="remark-cell">{{ item.remark || '-' }}</td>
             </tr>
             </tbody>
         </table>
     </div>
 
+    <!-- 分页 -->
+    <div class="pagination">
+        <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
+        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
+        <span class="page-count">共 {{ records.length }} 条</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
+    </div>
+
     <!-- 添加/编辑弹窗 -->
     <div v-if="modalVisible" class="modal-overlay" @click.self="modalVisible = false">
         <div class="modal-box">
             <div class="modal-title">
-                <span>{{ modalMode === 'add' ? '添加记录' : '编辑记录' }}</span>
+                <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
                 <button class="close-btn" @click="modalVisible = false">✕</button>
             </div>
 
-            <!-- 查看态显示汇总信息 -->
+            <!-- 查看态汇总 -->
             <template v-if="modalMode === 'edit' && !editable">
                 <div class="summary-box">
                     <div class="summary-line">
@@ -100,59 +112,66 @@
                 <hr class="form-divider">
             </template>
 
-            <div class="form-group">
+            <!-- 日期（水平布局） -->
+            <div class="form-group form-row">
                 <label>日期</label>
                 <input type="date" v-model="form.date" :disabled="modalMode === 'edit' && !editable"/>
             </div>
 
-            <hr style="margin: 8px 0; border: none; border-top: 1px dashed #ccc;">
-
+            <!-- 各银行卡字段（水平布局） -->
             <template v-for="f in editableFields" :key="f.key">
-                <div class="form-group" v-if="f.category.includes('deposit')">
-                    <label>{{ f.label }} 存款</label>
-                    <input type="text" :value="form[f.key + '_deposit']"
+                <div class="form-group form-row" v-if="f.category.includes('deposit')">
+                    <label>{{ f.label }}存款</label>
+                    <input type="text"
+                           :value="form[f.key + '_deposit']"
                            @input="filterNumber(f.key + '_deposit', $event)"
-                           placeholder="金额"
+                           placeholder="0"
                            :disabled="modalMode === 'edit' && !editable"/>
                 </div>
-                <div class="form-group" v-if="f.category.includes('debt')">
-                    <label>{{ f.label }} 负债</label>
-                    <input type="text" :value="form[f.key + '_debt']"
+                <div class="form-group form-row" v-if="f.category.includes('debt')">
+                    <label>{{ f.label }}负债</label>
+                    <input type="text"
+                           :value="form[f.key + '_debt']"
                            @input="filterNumber(f.key + '_debt', $event)"
-                           placeholder="金额"
+                           placeholder="0"
                            :disabled="modalMode === 'edit' && !editable"/>
                 </div>
             </template>
 
-            <!-- 备注 -->
+            <!-- 备注（展开/收起） -->
             <div class="form-group">
-                <label>备注</label>
-                <textarea v-model="form.remark" placeholder="可选备注"
-                          :disabled="modalMode === 'edit' && !editable"></textarea>
+                <div class="remark-header">
+                    <label>备注</label>
+                    <span class="remark-toggle" @click="showRemark = !showRemark">
+                        {{ showRemark ? '[收起]' : '[展开]' }}
+                    </span>
+                </div>
+                <textarea v-show="showRemark" v-model="form.remark"
+                          placeholder="可选备注信息"
+                          :disabled="modalMode === 'edit' && !editable"
+                          rows="3"></textarea>
+                <!-- 收起时显示备注预览 -->
+                <div v-if="!showRemark && form.remark" class="remark-preview">
+                    {{ form.remark.length > 30 ? form.remark.slice(0, 30) + '…' : form.remark }}
+                </div>
             </div>
 
+            <!-- 底部按钮 -->
             <div class="form-actions">
-                <button class="btn-secondary" @click="modalVisible = false">关闭</button>
-                <!-- 查看态：显示 编辑 + 删除 -->
+                <button class="btn-cancel" @click="modalVisible = false">关闭</button>
                 <template v-if="modalMode === 'edit' && !editable">
-                    <button class="btn-primary" @click="editable = true">编辑</button>
-                    <button class="btn-danger" @click="deleteRecord">删除</button>
+                    <button class="btn-edit-mode" @click="editable = true">✏️ 编辑</button>
+                    <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
-                <!-- 编辑态 / 添加态 -->
-                <template v-else>
-                    <button class="btn-primary" @click="saveRecord">保存</button>
-                    <button v-if="modalMode === 'edit'" class="btn-danger" @click="deleteRecord">删除</button>
+                <template v-if="modalMode === 'edit' && editable">
+                    <button class="btn-confirm" @click="saveRecord">保存修改</button>
+                    <button class="btn-delete" @click="deleteRecord">删除</button>
+                </template>
+                <template v-if="modalMode === 'add'">
+                    <button class="btn-confirm" @click="saveRecord">保存</button>
                 </template>
             </div>
         </div>
-    </div>
-
-    <!-- 分页控件 -->
-    <div class="pagination">
-        <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
-        <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-        <span class="page-count">共 {{ records.length }} 条</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
     </div>
 
     <!-- 银行卡管理弹窗 -->
@@ -161,13 +180,16 @@
             <div class="modal-title">
                 <span>💳 银行卡管理</span>
                 <div>
-                    <button class="btn-primary" @click="openAddBankCard" style="margin-right:6px;">＋ 新增</button>
+                    <button class="btn-add-card" @click="openAddBankCard">＋ 新增</button>
                     <button class="close-btn" @click="bankManagerVisible = false">✕</button>
                 </div>
             </div>
 
-            <div v-if="allConfigs.length === 0" class="empty-state">暂无银行卡，请添加</div>
-            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+            <div v-if="allConfigs.length === 0" class="empty-cell" style="text-align:center;padding:20px 0;color:#999;">
+                暂无银行卡，请添加
+            </div>
+            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item"
+                 :class="{ 'bank-card-disabled': f.disabled }">
                 <div>
                     <span class="bank-card-label">{{ f.label }}</span>
                     <span class="bank-card-types">
@@ -178,18 +200,18 @@
                 </div>
                 <div class="bank-card-actions">
                     <button @click="openEditBankCard(f)">编辑</button>
-                    <button v-if="!f.disabled" @click="toggleBankCardDisabled(f.key)">禁用</button>
-                    <button v-else @click="toggleBankCardDisabled(f.key)">启用</button>
+                    <button v-if="!f.disabled" class="btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
+                    <button v-else class="btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
                 </div>
             </div>
 
             <div class="form-actions" style="margin-top:12px;">
-                <button class="btn-secondary" @click="bankManagerVisible = false">关闭</button>
+                <button class="btn-cancel" @click="bankManagerVisible = false">关闭</button>
             </div>
         </div>
     </div>
 
-    <!-- 新增/编辑银行卡子弹窗 -->
+    <!-- 新增/编辑银行卡弹窗 -->
     <div v-if="bankFormVisible" class="modal-overlay" @click.self="bankFormVisible = false">
         <div class="modal-box" style="max-width:400px;">
             <div class="modal-title">
@@ -197,9 +219,9 @@
                 <button class="close-btn" @click="bankFormVisible = false">✕</button>
             </div>
 
-            <div class="form-group">
+            <div class="form-group form-row">
                 <label>显示名称</label>
-                <input v-model="bankForm.label" placeholder="如：招商银行"/>
+                <input v-model="bankForm.label" placeholder="如：招商银行" style="flex:1;"/>
             </div>
 
             <div class="form-group">
@@ -211,17 +233,14 @@
             </div>
 
             <div class="form-actions">
-                <button class="btn-secondary" @click="bankFormVisible = false">取消</button>
-                <button class="btn-primary" @click="saveBankCard">保存</button>
+                <button class="btn-cancel" @click="bankFormVisible = false">取消</button>
+                <button class="btn-confirm" @click="saveBankCard">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- 隐藏的文件输入框 -->
-    <input type="file" id="fileInput" accept=".json" style="display:none;" @change="importJSON($event)">
-
     <!-- Toast -->
-    <div class="toast" :class="{ show: toastMsg }">{{ toastMsg }}</div>
+    <div v-if="toastMsg" class="toast">{{ toastMsg }}</div>
 </div>
 
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>

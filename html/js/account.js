@@ -47,6 +47,7 @@ const app = createApp({
         const editable = ref(false);    // 编辑态（true）还是查看态（false）
         const editIndex = ref(-1);
         const form = ref({});
+        const showRemark = ref(false);  // 备注是否展开
 
         // 银行卡管理
         const bankManagerVisible = ref(false);
@@ -141,6 +142,15 @@ const app = createApp({
             if (currentPage.value < totalPages.value) currentPage.value++;
         }
 
+        // 全屏
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
+            }
+        }
+
         function exportCSV() {
             if (records.value.length === 0) {
                 showToast('暂无数据');
@@ -153,8 +163,8 @@ const app = createApp({
             // 1. 构建表头
             const headers = ['日期', '总余额', '总存款', '总负债'];
             configs.value.forEach(f => {
-                headers.push(`${f.label}存款`);
-                headers.push(`${f.label}负债`);
+                if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
+                if (f.category.includes('debt')) headers.push(`${f.label}负债`);
             });
             headers.push('备注');
 
@@ -167,17 +177,20 @@ const app = createApp({
                     getTotalDebt(item),
                 ];
                 configs.value.forEach(f => {
-                    row.push(Number(item[f.key + '_deposit']) || 0);
-                    row.push(Number(item[f.key + '_debt']) || 0);
+                    if (f.category.includes('deposit')) row.push(Number(item[f.key + '_deposit']) || 0);
+                    if (f.category.includes('debt')) row.push(Number(item[f.key + '_debt']) || 0);
                 });
                 row.push(item.remark || '');
                 return row;
             });
 
-            // 3. 拼接 CSV
+            // 3. 拼接 CSV（含逗号或引号的字段加引号转义）
             const lines = [headers.join(',')];
             rows.forEach(row => {
                 const escaped = row.map(val => {
+                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                        return '"' + val.replace(/"/g, '""') + '"';
+                    }
                     return val;
                 });
                 lines.push(escaped.join(','));
@@ -325,6 +338,7 @@ const app = createApp({
             editable.value = true;
             editIndex.value = -1;
             form.value = getDefaultForm();
+            showRemark.value = false;
             modalVisible.value = true;
         }
 
@@ -336,6 +350,7 @@ const app = createApp({
             editable.value = false; // 默认查看态
             editIndex.value = realIdx;
             form.value = {...records.value[realIdx]};
+            showRemark.value = !!form.value.remark; // 有备注默认展开
             modalVisible.value = true;
         }
 
@@ -387,6 +402,8 @@ const app = createApp({
                 saveData();
                 modalVisible.value = false;
                 showToast('🗑 已删除');
+                // 删除后若当前页已无数据，则回退一页
+                if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
             }
         }
 
@@ -472,6 +489,7 @@ const app = createApp({
             modalMode,
             editable,
             form,
+            showRemark,
             displayFields,
             allConfigs,
             editableFields,
@@ -512,6 +530,9 @@ const app = createApp({
             exportJSON,
             triggerImport,
             importJSON,
+
+            // 全屏
+            toggleFullscreen,
         };
     }
 });
