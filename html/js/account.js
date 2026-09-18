@@ -57,7 +57,19 @@ const app = createApp({
         const editingCardKey = ref('');
 
         // 计算
-        const displayFields = computed(() => configs.value);
+        // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
+        const displayFields = computed(() => {
+            const fields = [];
+            configs.value.forEach(f => {
+                if (f.category.includes('deposit')) {
+                    fields.push({key: f.key + '_deposit', label: f.label + '存款'});
+                }
+                if (f.category.includes('debt')) {
+                    fields.push({key: f.key + '_debt', label: f.label + '负债'});
+                }
+            });
+            return fields;
+        });
         const allConfigs = computed(() => configs.value);
         const editableFields = computed(() => {
             if (modalMode.value === 'add') {
@@ -83,8 +95,9 @@ const app = createApp({
         });
 
         // 核心函数
-        function getFieldValue(item, f, type) {
-            return Number(item[f.key + '_' + type]) || 0;
+        function getFieldValue(item, fieldKey) {
+            const val = item[fieldKey];
+            return val !== undefined && val !== null && val !== '' ? Number(val) : 0;
         }
 
         function getTotalDeposit(item) {

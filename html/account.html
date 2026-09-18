@@ -60,11 +60,13 @@
                 <td class="text-blue text-bold">{{ formatNumber(getTotalDeposit(item)) }}</td>
                 <!-- 总负债 -->
                 <td class="text-red text-bold">{{ formatNumber(getTotalDebt(item)) }}</td>
-                <!-- 各银行卡列（存款/负债） -->
+                <!-- 各银行卡列（按类型拆列：存款/负债独立成列） -->
                 <td v-for="f in displayFields" :key="f.key">
-                    <span class="text-blue">{{ formatNumber(getFieldValue(item, f, 'deposit')) }}</span>
-                    <span style="color:#bbb;margin:0 2px;">/</span>
-                    <span class="text-red">{{ formatNumber(getFieldValue(item, f, 'debt')) }}</span>
+                    <span v-if="getFieldValue(item, f.key) !== 0"
+                          :class="getFieldValue(item, f.key) > 0 ? 'text-green' : 'text-red'">
+                        {{ formatNumber(getFieldValue(item, f.key)) }}
+                    </span>
+                    <span v-else class="empty-cell">-</span>
                 </td>
                 <!-- 备注（最多2行截断） -->
                 <td class="remark-cell">{{ item.remark || '-' }}</td>
