@@ -375,7 +375,7 @@ body {
 .form-group input:disabled,
 .form-group textarea:disabled {
     background: #f0f2f5;
-    color: #666;
+    color: #222;
     cursor: not-allowed;
 }
 

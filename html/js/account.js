@@ -1,7 +1,19 @@
-const {createApp, ref, computed, onMounted} = Vue;
+const {createApp, ref, computed, onMounted, watch} = Vue;
 
 // 配置 & 存储
+/**
+ * VERSION_NUMBER: 数据格式版本号
+ * 用于标识导出 JSON 的数据结构版本，仅在数据格式发生不兼容变更时递增。
+ * 当前版本：1.0 - 稳定数据结构（card_xxx_deposit / card_xxx_debt 扁平结构）
+ */
 const VERSION_NUMBER = 1.0;
+
+/**
+ * STORAGE_KEYS: localStorage 存储键名统一管理
+ * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
+ * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
+ * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
+ */
 var STORAGE_KEYS = {
     RECORDS: 'financial_account_records',
     BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
@@ -55,6 +67,7 @@ const app = createApp({
         const bankFormMode = ref('add');  // 'add' | 'edit'
         const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
         const editingCardKey = ref('');
+        const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
 
         // 计算
         // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
@@ -420,6 +433,33 @@ const app = createApp({
             }
         }
 
+        // 关闭记录弹窗前确认未保存的修改
+        function confirmClose() {
+            let needConfirm = false;
+            if (modalMode.value === 'add') {
+                // 检查是否有填写内容（日期、金额、备注）
+                const f = form.value;
+                const hasDate = !!f.date;
+                let hasAmount = false;
+                Object.keys(f).forEach(k => {
+                    if (k !== 'date' && k !== 'remark' && Number(f[k]) !== 0) hasAmount = true;
+                });
+                const hasRemark = !!f.remark;
+                if (hasDate || hasAmount || hasRemark) {
+                    needConfirm = true;
+                }
+            } else if (modalMode.value === 'edit' && editable.value) {
+                needConfirm = true;
+            }
+            if (needConfirm) {
+                if (confirm('您有未保存的修改，确定要关闭吗？')) {
+                    modalVisible.value = false;
+                }
+            } else {
+                modalVisible.value = false;
+            }
+        }
+
         // 银行卡管理
         function openBankManager() {
             bankManagerVisible.value = true;
@@ -429,6 +469,7 @@ const app = createApp({
             bankFormMode.value = 'add';
             bankForm.value = {key: '', label: '', category: ['deposit', 'debt']};
             editingCardKey.value = '';
+            bankFormModified.value = false;
             bankFormVisible.value = true;
         }
 
@@ -436,6 +477,7 @@ const app = createApp({
             bankFormMode.value = 'edit';
             bankForm.value = {...card};
             editingCardKey.value = card.key;
+            bankFormModified.value = false;
             bankFormVisible.value = true;
         }
 
@@ -476,6 +518,7 @@ const app = createApp({
                 showToast('✅ 银行卡已更新');
             }
             saveConfig(configs.value);
+            bankFormModified.value = false;
             bankFormVisible.value = false;
         }
 
@@ -491,8 +534,35 @@ const app = createApp({
             }
         }
 
+        // 关闭银行卡表单弹窗，有未保存修改时先确认
+        function closeBankCardForm() {
+            if (bankFormModified.value) {
+                if (!confirm('您有未保存的修改，确定要关闭吗？')) {
+                    return;
+                }
+            }
+            bankFormVisible.value = false;
+        }
+
         onMounted(() => {
             loadData();
+            // 监听银行卡表单内容变化，标记未保存状态
+            watch(bankForm, () => {
+                if (bankFormVisible.value) {
+                    bankFormModified.value = true;
+                }
+            }, {deep: true});
+            // 编辑态刷新/关闭页面时拦截，防止未保存输入丢失
+            // 纯浏览态（查看记录、银行卡列表）不拦截，刷新不会丢数据
+            window.addEventListener('beforeunload', function (e) {
+                const recordEditing = modalVisible.value
+                    && (modalMode.value === 'add' || (modalMode.value === 'edit' && editable.value));
+                const editing = recordEditing || bankFormVisible.value;
+                if (editing) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
         });
 
         return {
@@ -511,6 +581,8 @@ const app = createApp({
             bankFormMode,
             bankForm,
             toastMsg,
+            confirmClose,
+            closeBankCardForm,
 
             getFieldValue,
             getTotalDeposit,

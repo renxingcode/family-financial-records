@@ -84,11 +84,11 @@
     </div>
 
     <!-- 添加/编辑弹窗 -->
-    <div v-if="modalVisible" class="modal-overlay" @click.self="modalVisible = false">
+    <div v-if="modalVisible" class="modal-overlay" @click.self="confirmClose">
         <div class="modal-box">
             <div class="modal-title">
                 <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
-                <button class="close-btn" @click="modalVisible = false">✕</button>
+                <button class="close-btn" @click="confirmClose">✕</button>
             </div>
 
             <!-- 查看态汇总 -->
@@ -160,7 +160,7 @@
 
             <!-- 底部按钮 -->
             <div class="form-actions">
-                <button class="btn-cancel" @click="modalVisible = false">关闭</button>
+                <button class="btn-cancel" @click="confirmClose">关闭</button>
                 <template v-if="modalMode === 'edit' && !editable">
                     <button class="btn-edit-mode" @click="editable = true">✏️ 编辑</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
@@ -214,11 +214,11 @@
     </div>
 
     <!-- 新增/编辑银行卡弹窗 -->
-    <div v-if="bankFormVisible" class="modal-overlay" @click.self="bankFormVisible = false">
+    <div v-if="bankFormVisible" class="modal-overlay" @click.self="closeBankCardForm">
         <div class="modal-box" style="max-width:400px;">
             <div class="modal-title">
                 <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
-                <button class="close-btn" @click="bankFormVisible = false">✕</button>
+                <button class="close-btn" @click="closeBankCardForm">✕</button>
             </div>
 
             <div class="form-group form-row">
@@ -235,7 +235,7 @@
             </div>
 
             <div class="form-actions">
-                <button class="btn-cancel" @click="bankFormVisible = false">取消</button>
+                <button class="btn-cancel" @click="closeBankCardForm">取消</button>
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
             </div>
         </div>

@@ -33,11 +33,5 @@
 
 UC 浏览器广告较多，如果设置不允许联网，则无法在线加载 Vue CDN。解决方式：
 
-1. 将 `vue.global.prod.js` 下载到本地（如项目 `data/` 目录）
-2. 将 `account.html` 中的 Vue 引用改为本地路径：
-
-```html
-<script src="vue.global.prod.js"></script>
-```
-
-即可离线使用，且无广告干扰。
+1. 将 `vue.global.prod.js` 下载到本地
+2. 将 `account.html` 中的 Vue 引用改为本地路径：`<script src="vue.global.prod.js"></script>` 即可离线使用，免受广告干扰。
