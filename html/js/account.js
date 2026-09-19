@@ -59,7 +59,8 @@ const app = createApp({
         const editable = ref(false);    // 编辑态（true）还是查看态（false）
         const editIndex = ref(-1);
         const form = ref({});
-        const showRemark = ref(false);  // 备注是否展开
+        const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
+        const remarkExpanded = ref(false); // 只读态备注是否展开（查看更多）
 
         // 银行卡管理
         const bankManagerVisible = ref(false);
@@ -365,6 +366,7 @@ const app = createApp({
             editIndex.value = -1;
             form.value = getDefaultForm();
             showRemark.value = false;
+            remarkExpanded.value = false;
             modalVisible.value = true;
         }
 
@@ -377,7 +379,20 @@ const app = createApp({
             editIndex.value = realIdx;
             form.value = {...records.value[realIdx]};
             showRemark.value = !!form.value.remark; // 有备注默认展开
+            remarkExpanded.value = false;
             modalVisible.value = true;
+        }
+
+        // 取消编辑：恢复原始数据，退出编辑态
+        function cancelEdit() {
+            if (editable.value) {
+                if (!confirm('您有未保存的修改，确定要返回吗？')) return;
+            }
+            const idx = editIndex.value;
+            if (idx >= 0 && idx < records.value.length) {
+                form.value = {...records.value[idx]};
+            }
+            editable.value = false;
         }
 
         function saveRecord() {
@@ -420,6 +435,26 @@ const app = createApp({
             }
             saveData();
             modalVisible.value = false;
+        }
+
+        // 复制当前记录：保留所有数据，日期设为今天，进入添加模式
+        function copyRecord() {
+            const data = {...form.value};
+            modalVisible.value = false;
+            setTimeout(() => {
+                modalMode.value = 'add';
+                editIndex.value = -1;
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                const d = String(today.getDate()).padStart(2, '0');
+                data.date = `${y}-${m}-${d}`;
+                form.value = data;
+                editable.value = true;
+                showRemark.value = false;
+                remarkExpanded.value = false;
+                modalVisible.value = true;
+            }, 100);
         }
 
         function deleteRecord() {
@@ -573,6 +608,7 @@ const app = createApp({
             editable,
             form,
             showRemark,
+            remarkExpanded,
             displayFields,
             allConfigs,
             editableFields,
@@ -593,8 +629,10 @@ const app = createApp({
 
             openAddModal,
             openEditModal,
+            cancelEdit,
             saveRecord,
             deleteRecord,
+            copyRecord,
             filterNumber,
 
             openBankManager,

@@ -140,35 +140,48 @@
                 </div>
             </template>
 
-            <!-- 备注（展开/收起） -->
+            <!-- 备注（编辑态展开收起 / 只读态更多展开） -->
             <div class="form-group">
                 <div class="remark-header">
                     <label>备注</label>
-                    <span class="remark-toggle" @click="showRemark = !showRemark">
+                    <!-- 编辑态：展开/收起 -->
+                    <span v-if="editable" class="remark-toggle" @click="showRemark = !showRemark">
                         {{ showRemark ? '[收起]' : '[展开]' }}
                     </span>
+                    <!-- 只读态：备注较长时显示"更多" -->
+                    <span v-else-if="form.remark && form.remark.length > 30" class="remark-toggle"
+                          @click="remarkExpanded = !remarkExpanded">
+                        {{ remarkExpanded ? '[收起]' : '[... 更多]' }}
+                    </span>
                 </div>
-                <textarea v-show="showRemark" v-model="form.remark"
+                <!-- 编辑态：文本域 -->
+                <textarea v-if="editable" v-show="showRemark" v-model="form.remark"
                           placeholder="可选备注信息"
-                          :disabled="modalMode === 'edit' && !editable"
                           rows="3"></textarea>
-                <!-- 收起时显示备注预览 -->
-                <div v-if="!showRemark && form.remark" class="remark-preview">
-                    {{ form.remark.length > 30 ? form.remark.slice(0, 30) + '…' : form.remark }}
+                <!-- 只读态：纯文本显示 -->
+                <div v-else
+                     style="white-space:pre-wrap;word-break:break-all;max-height:6em;overflow-y:auto;padding:2px 0;">
+                    <span v-if="!remarkExpanded">{{ form.remark ? form.remark.slice(0, 30) + (form.remark.length > 30 ? '…' : '') : '' }}</span>
+                    <span v-else>{{ form.remark || '' }}</span>
                 </div>
             </div>
 
             <!-- 底部按钮 -->
             <div class="form-actions">
                 <button class="btn-cancel" @click="confirmClose">关闭</button>
+                <!-- 查看态：复制 + 编辑 + 删除 -->
                 <template v-if="modalMode === 'edit' && !editable">
+                    <button class="btn-copy" @click="copyRecord">复制</button>
                     <button class="btn-edit-mode" @click="editable = true">✏️ 编辑</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
+                <!-- 编辑态：返回 + 保存 + 删除 -->
                 <template v-if="modalMode === 'edit' && editable">
+                    <button class="btn-cancel" @click="cancelEdit">返回</button>
                     <button class="btn-confirm" @click="saveRecord">保存修改</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
+                <!-- 添加态：只有保存 -->
                 <template v-if="modalMode === 'add'">
                     <button class="btn-confirm" @click="saveRecord">保存</button>
                 </template>

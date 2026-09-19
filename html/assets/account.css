@@ -442,13 +442,6 @@ body {
     text-decoration: underline;
 }
 
-.remark-preview {
-    font-size: 13px;
-    color: #888;
-    padding: 4px 0;
-    font-style: italic;
-}
-
 /* 弹窗按钮 */
 .form-actions {
     display: flex;
@@ -505,6 +498,16 @@ body {
 
 .form-actions .btn-edit-mode:active {
     background: #d68910;
+}
+
+.form-actions .btn-copy {
+    background: #8e44ad;
+    color: #fff;
+    flex: 0.6;
+}
+
+.form-actions .btn-copy:active {
+    background: #6c3483;
 }
 
 /* 银行卡管理 */
