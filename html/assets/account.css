@@ -139,6 +139,7 @@ body {
 
 .table-wrapper table {
     width: 100%;
+    table-layout: fixed;
     min-width: 700px;
     border-collapse: collapse;
     font-size: 13px;
@@ -159,10 +160,11 @@ body {
 
 .table-wrapper th,
 .table-wrapper td {
-    padding: 10px 8px;
+    padding: 6px 4px;
     text-align: left;
     border-bottom: 1px solid #eee;
-    white-space: nowrap;
+    vertical-align: middle;
+    word-break: break-word;
 }
 
 .table-wrapper th {
@@ -175,6 +177,45 @@ body {
     border-bottom: 2px solid #e1e5ea;
 }
 
+/* 表格列宽 */
+.col-date {
+    width: 90px;
+}
+
+.col-balance {
+    width: 120px;
+}
+
+.col-totals {
+    width: 120px;
+}
+
+.col-account {
+    width: 90px;
+}
+
+.col-remark {
+    width: 100px;
+}
+
+/* 单元格两行布局 */
+.cell-flex {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.4;
+    min-height: 2.6em;
+    justify-content: center;
+}
+
+.cell-flex .line1 {
+    font-weight: 500;
+}
+
+.cell-flex .line2 {
+    font-size: 0.9em;
+    color: #666;
+}
+
 /* 颜色辅助 */
 .text-red {
     color: #e74c3c;
@@ -184,20 +225,16 @@ body {
     color: #27ae60;
 }
 
-.text-green-a {
-    color: #2c7659;
-}
-
-.text-red-a {
-    color: #ee7711;
-}
-
 .text-blue {
     color: #2980b9;
 }
 
 .text-bold {
     font-weight: 700;
+}
+
+.text-muted {
+    color: #aaa;
 }
 
 .empty-cell {
@@ -288,7 +325,7 @@ body {
     background: #fff;
     border-radius: 16px;
     width: 100%;
-    max-width: 480px;
+    max-width: 520px;
     max-height: 90vh;
     overflow-y: auto;
     padding: 20px 18px 24px;
@@ -354,9 +391,18 @@ body {
     font-weight: 500;
 }
 
-.form-row input {
+.form-row .field-wrapper {
     flex: 1;
-    min-width: 80px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 120px;
+    flex-wrap: wrap;
+}
+
+.form-row .field-wrapper .sub-input {
+    flex: 1;
+    min-width: 60px;
 }
 
 .form-group input,
@@ -388,6 +434,39 @@ body {
 .form-group textarea {
     min-height: 72px;
     resize: vertical;
+}
+
+/* 存款/负债输入框（蓝色 / 粉色边框） */
+.form-group .input-deposit {
+    color: #2980b9;
+    border-color: #7fb3d8;
+}
+
+.form-group .input-deposit:focus {
+    border-color: #5a9fd4;
+    box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.15);
+}
+
+.form-group .input-debt {
+    color: #e74c3c;
+    border-color: #f5a0a0;
+}
+
+.form-group .input-debt:focus {
+    border-color: #e8a0a0;
+    box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.15);
+}
+
+.form-group .input-deposit:disabled,
+.form-group .input-debt:disabled {
+    border-color: #e1e5ea;
+}
+
+/* 小标签 */
+.label-small {
+    font-size: 11px;
+    color: #999;
+    margin-right: 5px;
 }
 
 /* 查看态汇总卡片 */

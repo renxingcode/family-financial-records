@@ -30,13 +30,18 @@
     <!-- 数据列表 -->
     <div class="table-wrapper">
         <table>
+            <colgroup>
+                <col class="col-date" />
+                <col class="col-balance" />
+                <col class="col-totals" />
+                <col v-for="f in displayFields" :key="f.key" class="col-account" />
+                <col class="col-remark" />
+            </colgroup>
             <thead>
             <tr>
                 <th>日期</th>
-                <th>总余额</th>
-                <th>对比上次差额</th>
-                <th>总存款</th>
-                <th>总负债</th>
+                <th>总余额 / 对比差额</th>
+                <th>总存款 / 总负债</th>
                 <th v-for="f in displayFields" :key="f.key">{{ f.label }}</th>
                 <th>备注</th>
             </tr>
@@ -46,29 +51,44 @@
                 <td colspan="100" class="empty-cell" style="text-align:center;padding:30px 0;color:#bbb;">暂无记录</td>
             </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
-                <!-- 日期 -->
-                <td class="clickable-date" @click="openEditModal(item, idx)">{{ item.date }}</td>
-                <!-- 总余额（正负分色） -->
-                <td class="text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
-                    {{ formatNumber(getBalance(item)) }}
+                <!-- 日期（上：年份 / 下：月.日） -->
+                <td class="clickable-date" @click="openEditModal(item, idx)">
+                    <div class="cell-flex">
+                        <span class="line1">{{ item.date.slice(0, 4) }}</span>
+                        <span class="line2">{{ item.date.slice(5, 7) + '.' + item.date.slice(8, 10) }}</span>
+                    </div>
                 </td>
-                <!-- 对比上次差额 -->
-                <td :class="getDiff(item, idx) !== null ? (getDiff(item, idx) >= 0 ? 'text-green-a' : 'text-red-a') : ''">
-                    {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
+                <!-- 总余额（上，正负分色）/ 对比差额（下） -->
+                <td>
+                    <div class="cell-flex">
+                        <span class="line1 text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
+                            {{ formatNumber(getBalance(item)) }}
+                        </span>
+                        <span class="line2"
+                              :class="getDiff(item, idx) !== null ? (getDiff(item, idx) >= 0 ? 'text-green' : 'text-red') : 'text-muted'">
+                            {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
+                        </span>
+                    </div>
                 </td>
-                <!-- 总存款 -->
-                <td class="text-blue text-bold">{{ formatNumber(getTotalDeposit(item)) }}</td>
-                <!-- 总负债 -->
-                <td class="text-red text-bold">{{ formatNumber(getTotalDebt(item)) }}</td>
-                <!-- 各银行卡列（按类型拆列：存款/负债独立成列） -->
+                <!-- 总存款（上）/ 总负债（下） -->
+                <td>
+                    <div class="cell-flex">
+                        <span class="line1 text-bold">{{ formatNumber(getTotalDeposit(item)) }}</span>
+                        <span class="line2 text-red">{{ formatNumber(getTotalDebt(item)) }}</span>
+                    </div>
+                </td>
+                <!-- 各银行卡列（存款/负债上下两行） -->
                 <td v-for="f in displayFields" :key="f.key">
-                    <span v-if="getFieldValue(item, f.key) !== 0"
-                          :class="getFieldValue(item, f.key) > 0 ? 'text-green' : 'text-red'">
-                        {{ formatNumber(getFieldValue(item, f.key)) }}
-                    </span>
-                    <span v-else class="empty-cell">-</span>
+                    <div class="cell-flex">
+                        <span class="line1">
+                            {{ getFieldValue(item, f, 'deposit') !== null ? formatNumber(getFieldValue(item, f, 'deposit')) : '-' }}
+                        </span>
+                        <span class="line2 text-red">
+                            {{ getFieldValue(item, f, 'debt') !== null ? formatNumber(getFieldValue(item, f, 'debt')) : '-' }}
+                        </span>
+                    </div>
                 </td>
-                <!-- 备注（最多2行截断） -->
+                <!-- 备注列 - 最多2行截断 -->
                 <td class="remark-cell">{{ item.remark || '-' }}</td>
             </tr>
             </tbody>
@@ -114,29 +134,72 @@
                 <hr class="form-divider">
             </template>
 
-            <!-- 日期（水平布局） -->
+            <!-- 日期 -->
             <div class="form-group form-row">
                 <label>日期</label>
-                <input type="date" v-model="form.date" :disabled="modalMode === 'edit' && !editable"/>
+                <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
+                <span v-else>{{ form.date }}</span>
             </div>
 
-            <!-- 各银行卡字段（水平布局） -->
+            <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
-                <div class="form-group form-row" v-if="f.category.includes('deposit')">
-                    <label>{{ f.label }}存款</label>
-                    <input type="text"
-                           :value="form[f.key + '_deposit']"
-                           @input="filterNumber(f.key + '_deposit', $event)"
-                           placeholder="0"
-                           :disabled="modalMode === 'edit' && !editable"/>
-                </div>
-                <div class="form-group form-row" v-if="f.category.includes('debt')">
-                    <label>{{ f.label }}负债</label>
-                    <input type="text"
-                           :value="form[f.key + '_debt']"
-                           @input="filterNumber(f.key + '_debt', $event)"
-                           placeholder="0"
-                           :disabled="modalMode === 'edit' && !editable"/>
+                <div class="form-group form-row">
+                    <label>{{ f.label }}</label>
+                    <div class="field-wrapper">
+                        <!-- 存款 + 负债 -->
+                        <template v-if="f.category.includes('deposit') && f.category.includes('debt')">
+                            <template v-if="editable">
+                                <input class="sub-input input-deposit" type="text"
+                                       :value="form[f.key + '_deposit']"
+                                       @input="filterNumber(f.key + '_deposit', $event)"
+                                       placeholder="存款"/>
+                                <input class="sub-input input-debt" type="text"
+                                       :value="form[f.key + '_debt']"
+                                       @input="filterNumber(f.key + '_debt', $event)"
+                                       placeholder="负债"/>
+                            </template>
+                            <template v-else>
+                                <span class="sub-input">
+                                    <span class="label-small">存款</span>
+                                    <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
+                                </span>
+                                <span class="sub-input">
+                                    <span class="label-small">负债</span>
+                                    <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
+                                </span>
+                            </template>
+                        </template>
+                        <!-- 仅存款 -->
+                        <template v-else-if="f.category.includes('deposit')">
+                            <template v-if="editable">
+                                <input class="sub-input input-deposit" style="flex:1;" type="text"
+                                       :value="form[f.key + '_deposit']"
+                                       @input="filterNumber(f.key + '_deposit', $event)"
+                                       placeholder="存款"/>
+                            </template>
+                            <template v-else>
+                                <span class="sub-input" style="flex:1;">
+                                    <span class="label-small">存款</span>
+                                    <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
+                                </span>
+                            </template>
+                        </template>
+                        <!-- 仅负债 -->
+                        <template v-else>
+                            <template v-if="editable">
+                                <input class="sub-input input-debt" style="flex:1;" type="text"
+                                       :value="form[f.key + '_debt']"
+                                       @input="filterNumber(f.key + '_debt', $event)"
+                                       placeholder="负债"/>
+                            </template>
+                            <template v-else>
+                                <span class="sub-input" style="flex:1;">
+                                    <span class="label-small">负债</span>
+                                    <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
+                                </span>
+                            </template>
+                        </template>
+                    </div>
                 </div>
             </template>
 
