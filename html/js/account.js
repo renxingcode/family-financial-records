@@ -334,6 +334,13 @@ const app = createApp({
             localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records.value));
         }
 
+        // 刷新数据（重新从 localStorage 加载）
+        function refreshData() {
+            loadData();
+            // 重新排序和分页会由 computed 自动触发
+            showToast('✅ 数据已刷新');
+        }
+
         // 表单工具
         function getDefaultForm() {
             const f = {date: '', remark: ''};
@@ -589,6 +596,15 @@ const app = createApp({
             bankFormVisible.value = false;
         }
 
+        // 清空所有数据，谨慎操作！二次确认防误触
+        function clearData() {
+            if (confirm('确认清空所有数据？此操作不可恢复！')) {
+                localStorage.removeItem(STORAGE_KEYS.RECORDS);
+                localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+                location.reload();
+            }
+        }
+
         onMounted(() => {
             loadData();
             // 监听银行卡表单内容变化，标记未保存状态
@@ -629,6 +645,7 @@ const app = createApp({
             toastMsg,
             confirmClose,
             closeBankCardForm,
+            clearData,
 
             getFieldValue,
             getTotalDeposit,
@@ -645,6 +662,7 @@ const app = createApp({
             deleteRecord,
             copyRecord,
             filterNumber,
+            refreshData,
 
             openBankManager,
             openAddBankCard,

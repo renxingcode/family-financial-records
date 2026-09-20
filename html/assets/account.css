@@ -121,6 +121,24 @@ body {
     background: #d68910;
 }
 
+.action-bar .btn-refresh {
+    background: #1abc9c;
+    color: #fff;
+}
+
+.action-bar .btn-refresh:active {
+    background: #16a085;
+}
+
+.action-bar .btn-clear {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.action-bar .btn-clear:active {
+    background: #c0392b;
+}
+
 #fileInput {
     display: none;
 }

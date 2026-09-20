@@ -21,9 +21,11 @@
 
     <!-- 操作栏 -->
     <div class="action-bar">
+        <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
         <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
         <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
         <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
+        <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
 
