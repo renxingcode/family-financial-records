@@ -143,7 +143,7 @@
 
             <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
-                <div class="form-group form-row">
+                <div class="form-group form-row" v-if="shouldShowFieldInModal(f)">
                     <label>{{ f.label }}</label>
                     <div class="field-wrapper">
                         <!-- 存款 + 负债 -->
