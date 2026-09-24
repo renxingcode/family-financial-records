@@ -13,10 +13,12 @@ const VERSION_NUMBER = 1.0;
  * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
  * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
  * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
+ * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, targetAmount, targetDate, targetRemark, ... }>）
  */
 var STORAGE_KEYS = {
     RECORDS: 'financial_account_records',
-    BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
+    BANK_CARD_CONFIGS: 'financial_account_bank_card_configs',
+    TARGET: 'financial_account_target'
 };
 
 function loadConfig() {
@@ -69,6 +71,22 @@ const app = createApp({
         const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
         const editingCardKey = ref('');
         const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
+
+        // 目标
+        const targetModalVisible = ref(false);
+        const targetEditable = ref(false);
+        const targetForm = ref({
+            annualIncome: '',
+            incomeRemark: '',
+            targetAmount: '',
+            targetDate: '',
+            targetRemark: '',
+            currentBalance: 0,
+            remaining: 0,
+            targetDateDisplay: '',
+            targetDuration: ''
+        });
+        const targetCalculated = ref(false);
 
         // 计算
         // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
@@ -601,7 +619,102 @@ const app = createApp({
             if (confirm('确认清空所有数据？此操作不可恢复！')) {
                 localStorage.removeItem(STORAGE_KEYS.RECORDS);
                 localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+                localStorage.removeItem(STORAGE_KEYS.TARGET);
                 location.reload();
+            }
+        }
+
+        // 目标计划
+        /**
+         * 打开目标计划弹窗
+         * 从 localStorage 加载目标数据，最新一条记录的总余额作为当前余额
+         */
+        function openTargetModal() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    targetForm.value = {...targetForm.value, ...data};
+                }
+            } catch (_) {
+            }
+            // 最新一条记录（日期最新）的总余额作为当前余额
+            const sorted = sortedRecords.value;
+            const latest = sorted.length ? sorted[0] : null;
+            targetForm.value.currentBalance = latest ? getBalance(latest) : 0;
+            targetCalculated.value = false;
+            targetEditable.value = false;
+            targetModalVisible.value = true;
+        }
+
+        function closeTargetModal() {
+            if (targetEditable.value) {
+                if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
+            }
+            targetModalVisible.value = false;
+        }
+
+        /**
+         * 计算"距离目标剩余"和"预计达成日期"
+         */
+        function calcTarget() {
+            const annual = Number(targetForm.value.annualIncome) || 0;
+            const target = Number(targetForm.value.targetAmount) || 0;
+            const current = Number(targetForm.value.currentBalance) || 0;
+            if (target <= 0 || annual <= 0) {
+                showToast('请先填写有效的年收入和目标金额');
+                return;
+            }
+
+            const remaining = target - current;
+            targetForm.value.remaining = remaining;
+
+            // 计算距离目标日期的时间
+            const targetDate = targetForm.value.targetDate;
+            if (targetDate) {
+                const now = new Date();
+                const targetDt = new Date(targetDate);
+                const diffMs = targetDt - now;
+                if (diffMs > 0) {
+                    const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
+                    const years = Math.floor(diffMonths / 12);
+                    const months = Math.round(diffMonths % 12);
+                    let duration = '';
+                    if (years > 0) duration += years + '年';
+                    if (months > 0) duration += months + '个月';
+                    if (!duration) duration = '不足1个月';
+                    targetForm.value.targetDuration = duration;
+                    const y = targetDt.getFullYear();
+                    const m = String(targetDt.getMonth() + 1).padStart(2, '0');
+                    targetForm.value.targetDateDisplay = `${y}年${m}月`;
+                } else {
+                    targetForm.value.targetDuration = '已过期';
+                    targetForm.value.targetDateDisplay = '已过期';
+                }
+            } else {
+                targetForm.value.targetDuration = '请设定目标日期';
+                targetForm.value.targetDateDisplay = '';
+            }
+            targetCalculated.value = true;
+        }
+
+        /**
+         * 保存目标计划数据
+         */
+        function saveTarget() {
+            try {
+                const data = {
+                    annualIncome: targetForm.value.annualIncome,
+                    incomeRemark: targetForm.value.incomeRemark,
+                    targetAmount: targetForm.value.targetAmount,
+                    targetDate: targetForm.value.targetDate,
+                    targetRemark: targetForm.value.targetRemark
+                };
+                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data));
+                showToast('✅ 目标已保存');
+                targetEditable.value = false;
+            } catch (_) {
+                showToast('❌ 保存失败');
             }
         }
 
@@ -685,6 +798,16 @@ const app = createApp({
 
             // 全屏
             toggleFullscreen,
+
+            // 目标
+            targetModalVisible,
+            targetEditable,
+            targetForm,
+            targetCalculated,
+            openTargetModal,
+            closeTargetModal,
+            calcTarget,
+            saveTarget,
         };
     }
 });

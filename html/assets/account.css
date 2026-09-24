@@ -79,6 +79,15 @@ body {
     background: #d35400;
 }
 
+.header-actions .btn-target {
+    background: #e67e22;
+    color: #fff;
+}
+
+.header-actions .btn-target:active {
+    background: #d35400;
+}
+
 /* 操作栏 */
 .action-bar {
     display: flex;
@@ -245,6 +254,10 @@ body {
 
 .text-blue {
     color: #2980b9;
+}
+
+.text-purple {
+    color: #8e44ad;
 }
 
 .text-bold {
@@ -605,6 +618,47 @@ body {
 
 .form-actions .btn-copy:active {
     background: #6c3483;
+}
+
+/* 目标 */
+.target-stats {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+}
+
+.target-stats .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.target-stats .stat-row:last-child {
+    border-bottom: none;
+}
+
+.target-stats .stat-label {
+    color: #555;
+}
+
+.target-stats .stat-value {
+    font-weight: 600;
+}
+
+.target-stats .stat-value.big-red {
+    font-size: 20px;
+    color: #e74c3c;
+}
+
+.target-stats .stat-value.big-brown {
+    font-size: 18px;
+    color: #8B4513;
+}
+
+.target-stats .stat-value.orange {
+    color: #e67e22;
 }
 
 /* 银行卡管理 */
