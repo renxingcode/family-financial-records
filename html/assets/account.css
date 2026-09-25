@@ -552,6 +552,17 @@ body {
     text-decoration: underline;
 }
 
+.remark-readonly {
+    max-height: 6.5em;
+    overflow-y: auto;
+    border: 1px dashed #ddd;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: #fafbfc;
+    line-height: 1.5;
+    word-break: break-all;
+}
+
 /* 弹窗按钮 */
 .form-actions {
     display: flex;

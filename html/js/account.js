@@ -62,7 +62,6 @@ const app = createApp({
         const editIndex = ref(-1);
         const form = ref({});
         const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
-        const remarkExpanded = ref(false); // 只读态备注是否展开（查看更多）
 
         // 银行卡管理
         const bankManagerVisible = ref(false);
@@ -401,7 +400,6 @@ const app = createApp({
             editIndex.value = -1;
             form.value = getDefaultForm();
             showRemark.value = false;
-            remarkExpanded.value = false;
             modalVisible.value = true;
         }
 
@@ -414,7 +412,6 @@ const app = createApp({
             editIndex.value = realIdx;
             form.value = {...records.value[realIdx]};
             showRemark.value = !!form.value.remark; // 有备注默认展开
-            remarkExpanded.value = false;
             modalVisible.value = true;
         }
 
@@ -487,7 +484,6 @@ const app = createApp({
                 form.value = data;
                 editable.value = true;
                 showRemark.value = false;
-                remarkExpanded.value = false;
                 modalVisible.value = true;
             }, 100);
         }
@@ -718,6 +714,40 @@ const app = createApp({
             }
         }
 
+        /**
+         * 进入目标编辑态
+         */
+        function enableTargetEdit() {
+            targetEditable.value = true;
+            targetCalculated.value = false; // 进入编辑态隐藏计算结果
+        }
+
+        /**
+         * 取消目标编辑：放弃修改，重载已保存数据
+         */
+        function cancelTargetEdit() {
+            if (targetEditable.value) {
+                if (!confirm('您有未保存的修改，确定要返回吗？')) return;
+            }
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    targetForm.value = {...targetForm.value, ...data};
+                }
+            } catch (_) {
+            }
+            targetEditable.value = false;
+            targetCalculated.value = false;
+        }
+
+        /**
+         * 备注展开/收起
+         */
+        function toggleRemark() {
+            showRemark.value = !showRemark.value;
+        }
+
         onMounted(() => {
             loadData();
             // 监听银行卡表单内容变化，标记未保存状态
@@ -747,7 +777,6 @@ const app = createApp({
             editable,
             form,
             showRemark,
-            remarkExpanded,
             displayFields,
             allConfigs,
             editableFields,
@@ -808,6 +837,9 @@ const app = createApp({
             closeTargetModal,
             calcTarget,
             saveTarget,
+            enableTargetEdit,
+            cancelTargetEdit,
+            toggleRemark,
         };
     }
 });

@@ -206,30 +206,22 @@
                 </div>
             </template>
 
-            <!-- 备注（编辑态展开收起 / 只读态更多展开） -->
+            <!-- 备注（编辑态展开收起 / 只读态滚动显示） -->
             <div class="form-group">
                 <div class="remark-header">
                     <label>备注</label>
                     <!-- 编辑态：展开/收起 -->
-                    <span v-if="editable" class="remark-toggle" @click="showRemark = !showRemark">
+                    <span v-if="editable" class="remark-toggle" @click="toggleRemark">
                         {{ showRemark ? '[收起]' : '[展开]' }}
-                    </span>
-                    <!-- 只读态：备注较长时显示"更多" -->
-                    <span v-else-if="form.remark && form.remark.length > 30" class="remark-toggle"
-                          @click="remarkExpanded = !remarkExpanded">
-                        {{ remarkExpanded ? '[收起]' : '[... 更多]' }}
                     </span>
                 </div>
                 <!-- 编辑态：文本域 -->
                 <textarea v-if="editable" v-show="showRemark" v-model="form.remark"
                           placeholder="可选备注信息"
                           rows="3"></textarea>
-                <!-- 只读态：纯文本显示 -->
-                <div v-else
-                     style="white-space:pre-wrap;word-break:break-all;max-height:6em;overflow-y:auto;padding:2px 0;">
-                    <span v-if="!remarkExpanded">{{ form.remark ? form.remark.slice(0, 30) + (form.remark.length > 30 ? '…' : '') : '' }}</span>
-                    <span v-else>{{ form.remark || '' }}</span>
-                </div>
+                <!-- 只读态：滚动区域显示完整备注 -->
+                <div v-else-if="form.remark" class="remark-readonly">{{ form.remark }}</div>
+                <span v-else>-</span>
             </div>
 
             <!-- 底部按钮 -->
@@ -271,9 +263,9 @@
             </div>
 
             <!-- 年收入说明 -->
-            <div class="form-group">
+            <div class="form-group form-row">
                 <label>年收入说明</label>
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="3" placeholder="可选"></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="2" style="flex:1;"></textarea>
                 <span v-else>{{ targetForm.incomeRemark || '-' }}</span>
             </div>
 
@@ -292,9 +284,9 @@
             </div>
 
             <!-- 目标说明 -->
-            <div class="form-group">
+            <div class="form-group form-row">
                 <label>目标说明</label>
-                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="3" placeholder="可选"></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="2" style="flex:1;"></textarea>
                 <span v-else>{{ targetForm.targetRemark || '-' }}</span>
             </div>
 
@@ -302,7 +294,7 @@
             <div class="form-group form-row">
                 <label>当前总余额</label>
                 <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }}</span>
-                <button style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;" @click="calcTarget">开始计算</button>
+                <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 
             <!-- 计算结果 -->
@@ -322,9 +314,10 @@
             <div class="form-actions">
                 <button class="btn-cancel" @click="closeTargetModal">关闭</button>
                 <template v-if="!targetEditable">
-                    <button class="btn-edit-mode" @click="targetEditable = true">编辑</button>
+                    <button class="btn-edit-mode" @click="enableTargetEdit">编辑</button>
                 </template>
                 <template v-else>
+                    <button class="btn-cancel" @click="cancelTargetEdit" style="flex:0.6;">返回</button>
                     <button class="btn-confirm" @click="saveTarget">保存</button>
                 </template>
             </div>
