@@ -43,8 +43,8 @@
             <thead>
             <tr>
                 <th>日期</th>
-                <th>总余额 / 对比差额</th>
-                <th>总存款 / 总负债</th>
+                <th>总余额<br>对比差额</th>
+                <th>总存款<br>总负债</th>
                 <th v-for="f in displayFields" :key="f.key">{{ f.label }}</th>
                 <th>备注</th>
             </tr>
@@ -61,14 +61,14 @@
                         <span class="line2">{{ item.date.slice(5, 7) + '.' + item.date.slice(8, 10) }}</span>
                     </div>
                 </td>
-                <!-- 总余额（上，正负分色）/ 对比差额（下） -->
+                <!-- 总余额（上，正负分色）/ 对比差额（下，负数橙色 / 正数灰色） -->
                 <td>
                     <div class="cell-flex">
                         <span class="line1 text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                             {{ formatNumber(getBalance(item)) }}
                         </span>
                         <span class="line2"
-                              :class="getDiff(item, idx) !== null ? (getDiff(item, idx) >= 0 ? 'text-green' : 'text-red') : 'text-muted'">
+                              :style="getDiff(item, idx) !== null ? { color: getDiff(item, idx) < 0 ? 'orange' : '#666' } : {}">
                             {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
                         </span>
                     </div>
@@ -257,48 +257,46 @@
 
             <!-- 年收入 -->
             <div class="form-group form-row">
-                <label>年收入</label>
+                <label>年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" style="flex:1;" />
                 <span v-else class="text-blue">{{ formatNumber(targetForm.annualIncome) || '-' }}</span>
             </div>
 
-            <!-- 年收入说明 -->
-            <div class="form-group form-row">
-                <label>年收入说明</label>
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="2" style="flex:1;"></textarea>
-                <span v-else>{{ targetForm.incomeRemark || '-' }}</span>
+            <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="3" placeholder="补充年收入说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
             <!-- 目标金额 -->
             <div class="form-group form-row">
-                <label>目标金额</label>
+                <label>目标金额: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" style="flex:1;" />
                 <span v-else class="text-purple text-bold">{{ formatNumber(targetForm.targetAmount) || '-' }}</span>
             </div>
 
             <!-- 目标日期 -->
             <div class="form-group form-row">
-                <label>目标日期</label>
+                <label>目标日期: </label>
                 <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" style="flex:1;" />
                 <span v-else>{{ targetForm.targetDate || '-' }}</span>
             </div>
 
-            <!-- 目标说明 -->
-            <div class="form-group form-row">
-                <label>目标说明</label>
-                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="2" style="flex:1;"></textarea>
-                <span v-else>{{ targetForm.targetRemark || '-' }}</span>
+            <!-- 目标说明（编辑：无标题文本域；查看：虚线框） -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="3" placeholder="补充目标说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.targetRemark || '暂无说明' }}</div>
             </div>
 
             <!-- 当前总余额 + 计算按钮 -->
             <div class="form-group form-row">
-                <label>当前总余额</label>
+                <label>当前总余额: </label>
                 <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }}</span>
                 <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 
-            <!-- 计算结果 -->
-            <div v-if="targetCalculated" class="target-stats">
+            <!-- 计算结果（仅查看态） -->
+            <div v-if="!targetEditable && targetCalculated" class="target-stats">
                 <div class="stat-row">
                     <span class="stat-label">距离目标剩余</span>
                     <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>

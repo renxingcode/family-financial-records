@@ -206,15 +206,15 @@ body {
 
 /* 表格列宽 */
 .col-date {
-    width: 90px;
+    width: 50px;
 }
 
 .col-balance {
-    width: 120px;
+    width: 80px;
 }
 
 .col-totals {
-    width: 120px;
+    width: 80px;
 }
 
 .col-account {
@@ -222,7 +222,7 @@ body {
 }
 
 .col-remark {
-    width: 100px;
+    width: 120px;
 }
 
 /* 单元格两行布局 */
@@ -560,6 +560,19 @@ body {
     border-radius: 4px;
     background: #fafbfc;
     line-height: 1.5;
+    word-break: break-all;
+}
+
+/* 目标弹窗 - 说明虚线框 */
+.remark-box {
+    border: 1px dashed #ccc;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #666;
+    background: #fafbfc;
+    min-height: 56px;
+    line-height: 1.6;
     word-break: break-all;
 }
 
