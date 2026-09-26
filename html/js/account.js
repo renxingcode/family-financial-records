@@ -215,7 +215,7 @@ const app = createApp({
             const sorted = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
 
             // 1. 构建表头
-            const headers = ['日期', '总余额', '总存款', '总负债'];
+            const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
             configs.value.forEach(f => {
                 if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
                 if (f.category.includes('debt')) headers.push(`${f.label}负债`);
@@ -223,10 +223,14 @@ const app = createApp({
             headers.push('备注');
 
             // 2. 构建数据行
-            const rows = sorted.map(item => {
+            const rows = sorted.map((item, index) => {
+                // 对比差额：当前记录与下一条（日期更早）记录的余额差
+                const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
+                const diff = prev ? getBalance(item) - getBalance(prev) : null;
                 const row = [
                     item.date,
                     getBalance(item),
+                    diff !== null ? diff : '-',
                     getTotalDeposit(item),
                     getTotalDebt(item),
                 ];
@@ -238,12 +242,15 @@ const app = createApp({
                 return row;
             });
 
-            // 3. 拼接 CSV（含逗号或引号的字段加引号转义）
+            // 3. 拼接 CSV（含逗号、换行符或引号的字段加引号转义）
             const lines = [headers.join(',')];
             rows.forEach(row => {
                 const escaped = row.map(val => {
-                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
-                        return '"' + val.replace(/"/g, '""') + '"';
+                    if (typeof val === 'string') {
+                        if (val.includes(',') || val.includes('\n') || val.includes('\r') || val.includes('"')) {
+                            return '"' + val.replace(/"/g, '""') + '"';
+                        }
+                        return val;
                     }
                     return val;
                 });
@@ -270,6 +277,14 @@ const app = createApp({
                 return;
             }
 
+            // 读取目标数据
+            let targetData = null;
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                if (raw) targetData = JSON.parse(raw);
+            } catch (_) {
+            }
+
             // 按日期降序排列
             const sortedForExport = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -278,6 +293,7 @@ const app = createApp({
                 exportTime: new Date().toISOString(),
                 config: configs.value,
                 records: sortedForExport,
+                target: targetData,
             };
 
             const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -315,6 +331,12 @@ const app = createApp({
                     // 覆盖记录
                     records.value = data.records;
                     saveData();
+                    // 覆盖目标
+                    if (data.target) {
+                        localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    } else {
+                        localStorage.removeItem(STORAGE_KEYS.TARGET);
+                    }
                     currentPage.value = 1;
                     showToast('✅ 导入成功');
                 } catch (err) {
@@ -665,31 +687,27 @@ const app = createApp({
             const remaining = target - current;
             targetForm.value.remaining = remaining;
 
-            // 计算距离目标日期的时间
-            const targetDate = targetForm.value.targetDate;
-            if (targetDate) {
+            // 按年收入估算预计达成日期
+            const monthlyIncome = annual / 12;
+            if (remaining > 0 && monthlyIncome > 0) {
+                const monthsNeeded = Math.round(remaining / monthlyIncome);
                 const now = new Date();
-                const targetDt = new Date(targetDate);
-                const diffMs = targetDt - now;
-                if (diffMs > 0) {
-                    const diffMonths = diffMs / (1000 * 60 * 60 * 24 * 30.44);
-                    const years = Math.floor(diffMonths / 12);
-                    const months = Math.round(diffMonths % 12);
-                    let duration = '';
-                    if (years > 0) duration += years + '年';
-                    if (months > 0) duration += months + '个月';
-                    if (!duration) duration = '不足1个月';
-                    targetForm.value.targetDuration = duration;
-                    const y = targetDt.getFullYear();
-                    const m = String(targetDt.getMonth() + 1).padStart(2, '0');
-                    targetForm.value.targetDateDisplay = `${y}年${m}月`;
-                } else {
-                    targetForm.value.targetDuration = '已过期';
-                    targetForm.value.targetDateDisplay = '已过期';
-                }
+                const targetDate = new Date(now);
+                targetDate.setMonth(now.getMonth() + monthsNeeded);
+                const targetYear = targetDate.getFullYear();
+                const targetMonth = targetDate.getMonth() + 1;
+                targetForm.value.targetDateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
+
+                const years = Math.floor(monthsNeeded / 12);
+                const months = monthsNeeded % 12;
+                let duration = '';
+                if (years > 0) duration += years + '年';
+                if (months > 0) duration += months + '个月';
+                if (!duration) duration = '不足1个月';
+                targetForm.value.targetDuration = duration;
             } else {
-                targetForm.value.targetDuration = '请设定目标日期';
-                targetForm.value.targetDateDisplay = '';
+                targetForm.value.targetDateDisplay = '已达成或无法计算';
+                targetForm.value.targetDuration = '';
             }
             targetCalculated.value = true;
         }

@@ -298,12 +298,15 @@
             <!-- 计算结果（仅查看态） -->
             <div v-if="!targetEditable && targetCalculated" class="target-stats">
                 <div class="stat-row">
-                    <span class="stat-label">距离目标剩余</span>
+                    <span class="stat-label">距离目标剩余: </span>
                     <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">距离目标日期</span>
+                    <span class="stat-label">剩余金额截止日期: </span>
                     <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
+                </div>
+                <div class="stat-row">
+                    <span style="color: #333;">还剩 </span>
                     <span class="stat-value big-brown">{{ targetForm.targetDuration }}</span>
                 </div>
             </div>
