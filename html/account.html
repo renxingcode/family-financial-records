@@ -25,7 +25,8 @@
         <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
         <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
         <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
-        <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
+        <button class="btn-import" @click="triggerImport('overwrite')">📤 覆盖导入</button>
+        <button class="btn-import" @click="triggerImport('merge')">📤 合并导入</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">

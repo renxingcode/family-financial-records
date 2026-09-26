@@ -308,7 +308,11 @@ const app = createApp({
             showToast('✅ 导出成功');
         }
 
-        function triggerImport() {
+        // 导入模式：overwrite=覆盖导入 / merge=合并导入
+        let importMode = 'overwrite';
+
+        function triggerImport(mode) {
+            importMode = mode;
             document.getElementById('fileInput').click();
         }
 
@@ -316,31 +320,55 @@ const app = createApp({
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.records || !Array.isArray(data.records)) {
                         showToast('❌ 无效的数据格式');
                         return;
                     }
-                    // 覆盖配置
-                    if (data.config && Array.isArray(data.config)) {
-                        configs.value = data.config;
-                        saveConfig(configs.value);
+                    if (importMode === 'overwrite') {
+                        if (confirm(`将覆盖导入 ${data.records.length} 条记录，当前数据将被替换。确认？`)) {
+                            // 覆盖配置
+                            if (data.config && Array.isArray(data.config)) {
+                                configs.value = data.config;
+                                saveConfig(configs.value);
+                            }
+                            // 覆盖记录
+                            records.value = data.records;
+                            saveData();
+                            // 覆盖目标
+                            if (data.target) {
+                                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                            } else {
+                                localStorage.removeItem(STORAGE_KEYS.TARGET);
+                            }
+                            showToast(`✅ 成功覆盖导入 ${data.records.length} 条记录`);
+                            currentPage.value = 1;
+                        }
+                    } else if (importMode === 'merge') {
+                        // 合并导入：跳过已有日期的记录
+                        let addedCount = 0;
+                        let skippedCount = 0;
+                        const existingDates = new Set(records.value.map(r => r.date));
+                        data.records.forEach(rec => {
+                            if (!existingDates.has(rec.date)) {
+                                records.value.push(rec);
+                                addedCount++;
+                            } else {
+                                skippedCount++;
+                            }
+                        });
+                        saveData();
+                        // 合并目标：有则直接覆盖
+                        if (data.target) {
+                            localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                        }
+                        showToast(`✅ 合并导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条（日期重复）`);
+                        currentPage.value = 1;
                     }
-                    // 覆盖记录
-                    records.value = data.records;
-                    saveData();
-                    // 覆盖目标
-                    if (data.target) {
-                        localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
-                    } else {
-                        localStorage.removeItem(STORAGE_KEYS.TARGET);
-                    }
-                    currentPage.value = 1;
-                    showToast('✅ 导入成功');
                 } catch (err) {
-                    showToast('❌ 文件解析失败');
+                    showToast('❌ JSON 解析失败');
                 }
             };
             reader.readAsText(file);
