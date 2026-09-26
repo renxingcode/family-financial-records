@@ -467,6 +467,11 @@ body {
     resize: vertical;
 }
 
+/* 用于 flex 布局的输入框 */
+.form-input-flex {
+    flex: 1;
+}
+
 /* 存款/负债输入框（蓝色 / 粉色边框） */
 .form-group .input-deposit {
     color: #2980b9;

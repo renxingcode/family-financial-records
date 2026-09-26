@@ -258,7 +258,7 @@
             <!-- 年收入 -->
             <div class="form-group form-row">
                 <label>年收入: </label>
-                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" style="flex:1;" />
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">{{ formatNumber(targetForm.annualIncome) || '-' }}</span>
             </div>
 
@@ -271,14 +271,14 @@
             <!-- 目标金额 -->
             <div class="form-group form-row">
                 <label>目标金额: </label>
-                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" style="flex:1;" />
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-purple text-bold">{{ formatNumber(targetForm.targetAmount) || '-' }}</span>
             </div>
 
             <!-- 目标日期 -->
             <div class="form-group form-row">
                 <label>目标日期: </label>
-                <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" style="flex:1;" />
+                <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
                 <span v-else>{{ targetForm.targetDate || '-' }}</span>
             </div>
 
@@ -299,15 +299,27 @@
             <div v-if="!targetEditable && targetCalculated" class="target-stats">
                 <div class="stat-row">
                     <span class="stat-label">距离目标剩余: </span>
-                    <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
+                    <span>
+                        <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
+                        <span style="font-size:12px;color:#888;margin-left:8px;">
+                            ({{ formatNumber(targetForm.targetAmount) }} - {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
+                        </span>
+                    </span>
                 </div>
                 <div class="stat-row">
                     <span class="stat-label">剩余金额截止日期: </span>
-                    <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
+                    <span>
+                        <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
+                        <span style="font-size:12px;color:#888;margin-left:8px;">
+                            (还剩 {{ targetForm.targetDuration }})
+                        </span>
+                    </span>
                 </div>
                 <div class="stat-row">
-                    <span style="color: #333;">还剩 </span>
-                    <span class="stat-value big-brown">{{ targetForm.targetDuration }}</span>
+                    <span class="stat-label">计算过程: </span>
+                    <span style="font-size:12px;color:#888;">
+                        {{ formatNumber(targetForm.remaining) }} ÷ ({{ formatNumber(targetForm.annualIncome) }} ÷ 12) ≈ {{ Math.round(targetForm.remaining / (targetForm.annualIncome / 12)) }} 个月
+                    </span>
                 </div>
             </div>
 
