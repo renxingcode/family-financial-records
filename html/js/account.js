@@ -214,7 +214,54 @@ const app = createApp({
             // 按日期降序排列
             const sorted = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
 
-            // 1. 构建表头
+            // 1. 构建目标计划部分（若已设置目标）
+            let csv = '';
+
+            // 读取目标数据
+            let targetData = null;
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                if (raw) targetData = JSON.parse(raw);
+            } catch (_) {
+            }
+
+            if (targetData) {
+                // 当前总余额：取最新一条记录的余额
+                const latest = sorted[0];
+                const currentBalance = latest ? getBalance(latest) : 0;
+
+                // 剩余金额与预计达成日期（targetForm 计算过才有值）
+                const remaining = targetForm.value.remaining || 0;
+                const targetDateDisplay = targetForm.value.targetDateDisplay || '';
+                const targetDuration = targetForm.value.targetDuration || '';
+
+                const targetRows = [
+                    ['年收入', targetData.annualIncome || ''],
+                    ['年收入说明', targetData.incomeRemark || ''],
+                    ['目标金额', targetData.targetAmount || ''],
+                    ['目标日期', targetData.targetDate || ''],
+                    ['目标说明', targetData.targetRemark || ''],
+                    ['当前总余额', currentBalance],
+                    ['剩余金额', remaining],
+                    ['预计达成日期', targetDateDisplay],
+                    ['剩余时间', targetDuration]
+                ];
+
+                targetRows.forEach(row => {
+                    const escaped = row.map(val => {
+                        if (typeof val === 'string' && (val.includes(',') || val.includes('\n') || val.includes('\r') || val.includes('"'))) {
+                            return '"' + val.replace(/"/g, '""') + '"';
+                        }
+                        return val;
+                    });
+                    csv += escaped.join(',') + '\n';
+                });
+
+                // 目标计划与数据表格之间空一行
+                csv += '\n';
+            }
+
+            // 2. 构建表头
             const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
             configs.value.forEach(f => {
                 if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
@@ -222,7 +269,7 @@ const app = createApp({
             });
             headers.push('备注');
 
-            // 2. 构建数据行
+            // 3. 构建数据行
             const rows = sorted.map((item, index) => {
                 // 对比差额：当前记录与下一条（日期更早）记录的余额差
                 const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
@@ -242,7 +289,7 @@ const app = createApp({
                 return row;
             });
 
-            // 3. 拼接 CSV（含逗号、换行符或引号的字段加引号转义）
+            // 4. 拼接数据表格（追加到目标计划部分之后）
             const lines = [headers.join(',')];
             rows.forEach(row => {
                 const escaped = row.map(val => {
@@ -257,8 +304,8 @@ const app = createApp({
                 lines.push(escaped.join(','));
             });
 
-            // 4. 下载
-            const csv = lines.join('\n');
+            // 5. 下载（添加 BOM 确保 Excel 正确识别 UTF-8）
+            csv += lines.join('\n');
             const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');

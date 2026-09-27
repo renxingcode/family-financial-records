@@ -298,29 +298,26 @@
 
             <!-- 计算结果（仅查看态） -->
             <div v-if="!targetEditable && targetCalculated" class="target-stats">
+                <!-- 距离目标剩余 -->
                 <div class="stat-row">
                     <span class="stat-label">距离目标剩余: </span>
-                    <span>
-                        <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
-                        <span style="font-size:12px;color:#888;margin-left:8px;">
-                            ({{ formatNumber(targetForm.targetAmount) }} - {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
-                        </span>
-                    </span>
+                    <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
                 </div>
+                <!-- 公式行（靠右） -->
+                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                    ( 目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
+                </div>
+                <!-- 预计达成日期 -->
                 <div class="stat-row">
                     <span class="stat-label">剩余金额截止日期: </span>
                     <span>
                         <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
-                        <span style="font-size:12px;color:#888;margin-left:8px;">
-                            (还剩 {{ targetForm.targetDuration }})
-                        </span>
+                        <span style="font-size:12px;color:#888;margin-left:8px;">(还剩 {{ targetForm.targetDuration }})</span>
                     </span>
                 </div>
-                <div class="stat-row">
-                    <span class="stat-label">计算过程: </span>
-                    <span style="font-size:12px;color:#888;">
-                        {{ formatNumber(targetForm.remaining) }} ÷ ({{ formatNumber(targetForm.annualIncome) }} ÷ 12) ≈ {{ Math.round(targetForm.remaining / (targetForm.annualIncome / 12)) }} 个月
-                    </span>
+                <!-- 公式行（靠右） -->
+                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                    ( 目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }} ≈ {{ Number(targetForm.remaining / targetForm.annualIncome).toFixed(1) }} 年)
                 </div>
             </div>
 

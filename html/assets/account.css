@@ -661,7 +661,6 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 4px 0;
-    border-bottom: 1px solid #eee;
 }
 
 .target-stats .stat-row:last-child {
