@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>家庭账户管理V0.3</title>
+    <title>家庭账户管理V0.4</title>
     <style>
         /* 全局重置 */
         * {
@@ -83,6 +83,15 @@
         }
 
         .header-actions .btn-bank:active {
+            background: #d35400;
+        }
+
+        .header-actions .btn-target {
+            background: #e67e22;
+            color: #fff;
+        }
+
+        .header-actions .btn-target:active {
             background: #d35400;
         }
 
@@ -204,15 +213,15 @@
 
         /* 表格列宽 */
         .col-date {
-            width: 90px;
+            width: 50px;
         }
 
         .col-balance {
-            width: 120px;
+            width: 80px;
         }
 
         .col-totals {
-            width: 120px;
+            width: 80px;
         }
 
         .col-account {
@@ -220,7 +229,7 @@
         }
 
         .col-remark {
-            width: 100px;
+            width: 120px;
         }
 
         /* 单元格两行布局 */
@@ -252,6 +261,10 @@
 
         .text-blue {
             color: #2980b9;
+        }
+
+        .text-purple {
+            color: #8e44ad;
         }
 
         .text-bold {
@@ -461,6 +474,11 @@
             resize: vertical;
         }
 
+        /* 用于 flex 布局的输入框 */
+        .form-input-flex {
+            flex: 1;
+        }
+
         /* 存款/负债输入框（蓝色 / 粉色边框） */
         .form-group .input-deposit {
             color: #2980b9;
@@ -546,6 +564,30 @@
             text-decoration: underline;
         }
 
+        .remark-readonly {
+            max-height: 6.5em;
+            overflow-y: auto;
+            border: 1px dashed #ddd;
+            padding: 6px 8px;
+            border-radius: 4px;
+            background: #fafbfc;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        /* 目标弹窗 - 说明虚线框 */
+        .remark-box {
+            border: 1px dashed #ccc;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #666;
+            background: #fafbfc;
+            min-height: 56px;
+            line-height: 1.6;
+            word-break: break-all;
+        }
+
         /* 弹窗按钮 */
         .form-actions {
             display: flex;
@@ -612,6 +654,46 @@
 
         .form-actions .btn-copy:active {
             background: #6c3483;
+        }
+
+        /* 目标 */
+        .target-stats {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+        }
+
+        .target-stats .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+        }
+
+        .target-stats .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .target-stats .stat-label {
+            color: #555;
+        }
+
+        .target-stats .stat-value {
+            font-weight: 600;
+        }
+
+        .target-stats .stat-value.big-red {
+            font-size: 20px;
+            color: #e74c3c;
+        }
+
+        .target-stats .stat-value.big-brown {
+            font-size: 18px;
+            color: #8B4513;
+        }
+
+        .target-stats .stat-value.orange {
+            color: #e67e22;
         }
 
         /* 银行卡管理 */
@@ -856,10 +938,11 @@
 
     <!-- 头部 -->
     <div class="app-header">
-        <h1>📊 家庭账户V0.3</h1>
+        <h1>📊 家庭账户V0.4</h1>
         <div class="header-actions">
             <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
-            <button class="btn-bank" @click="openBankManager">💳 银行卡管理</button>
+            <button class="btn-target" @click="openTargetModal">🎯 目标</button>
+            <button class="btn-bank" @click="openBankManager">💳 银行卡</button>
             <button class="btn-add" @click="openAddModal">＋ 添加</button>
         </div>
     </div>
@@ -869,7 +952,8 @@
         <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
         <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
         <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
-        <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
+        <button class="btn-import" @click="triggerImport('overwrite')">📤 覆盖导入</button>
+        <button class="btn-import" @click="triggerImport('merge')">📤 合并导入</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
@@ -887,8 +971,8 @@
             <thead>
             <tr>
                 <th>日期</th>
-                <th>总余额 / 对比差额</th>
-                <th>总存款 / 总负债</th>
+                <th>总余额<br>对比差额</th>
+                <th>总存款<br>总负债</th>
                 <th v-for="f in displayFields" :key="f.key">{{ f.label }}</th>
                 <th>备注</th>
             </tr>
@@ -905,14 +989,14 @@
                         <span class="line2">{{ item.date.slice(5, 7) + '.' + item.date.slice(8, 10) }}</span>
                     </div>
                 </td>
-                <!-- 总余额（上，正负分色）/ 对比差额（下） -->
+                <!-- 总余额（上，正负分色）/ 对比差额（下，负数橙色 / 正数灰色） -->
                 <td>
                     <div class="cell-flex">
                         <span class="line1 text-bold" :class="getBalance(item) >= 0 ? 'text-green' : 'text-red'">
                             {{ formatNumber(getBalance(item)) }}
                         </span>
                         <span class="line2"
-                              :class="getDiff(item, idx) !== null ? (getDiff(item, idx) >= 0 ? 'text-green' : 'text-red') : 'text-muted'">
+                              :style="getDiff(item, idx) !== null ? { color: getDiff(item, idx) < 0 ? 'orange' : '#666' } : {}">
                             {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
                         </span>
                     </div>
@@ -1050,30 +1134,22 @@
                 </div>
             </template>
 
-            <!-- 备注（编辑态展开收起 / 只读态更多展开） -->
+            <!-- 备注（编辑态展开收起 / 只读态滚动显示） -->
             <div class="form-group">
                 <div class="remark-header">
                     <label>备注</label>
                     <!-- 编辑态：展开/收起 -->
-                    <span v-if="editable" class="remark-toggle" @click="showRemark = !showRemark">
+                    <span v-if="editable" class="remark-toggle" @click="toggleRemark">
                         {{ showRemark ? '[收起]' : '[展开]' }}
-                    </span>
-                    <!-- 只读态：备注较长时显示"更多" -->
-                    <span v-else-if="form.remark && form.remark.length > 30" class="remark-toggle"
-                          @click="remarkExpanded = !remarkExpanded">
-                        {{ remarkExpanded ? '[收起]' : '[... 更多]' }}
                     </span>
                 </div>
                 <!-- 编辑态：文本域 -->
                 <textarea v-if="editable" v-show="showRemark" v-model="form.remark"
                           placeholder="可选备注信息"
                           rows="3"></textarea>
-                <!-- 只读态：纯文本显示 -->
-                <div v-else
-                     style="white-space:pre-wrap;word-break:break-all;max-height:6em;overflow-y:auto;padding:2px 0;">
-                    <span v-if="!remarkExpanded">{{ form.remark ? form.remark.slice(0, 30) + (form.remark.length > 30 ? '…' : '') : '' }}</span>
-                    <span v-else>{{ form.remark || '' }}</span>
-                </div>
+                <!-- 只读态：滚动区域显示完整备注 -->
+                <div v-else-if="form.remark" class="remark-readonly">{{ form.remark }}</div>
+                <span v-else>-</span>
             </div>
 
             <!-- 底部按钮 -->
@@ -1094,6 +1170,93 @@
                 <!-- 添加态：只有保存 -->
                 <template v-if="modalMode === 'add'">
                     <button class="btn-confirm" @click="saveRecord">保存</button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- 目标弹窗 -->
+    <div v-if="targetModalVisible" class="modal-overlay" @click.self="closeTargetModal">
+        <div class="modal-box" style="max-width:520px;">
+            <div class="modal-title">
+                <span>🎯 目标计划</span>
+                <button class="close-btn" @click="closeTargetModal">✕</button>
+            </div>
+
+            <!-- 年收入 -->
+            <div class="form-group form-row">
+                <label>年收入: </label>
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
+                <span v-else class="text-blue">{{ formatNumber(targetForm.annualIncome) || '-' }}</span>
+            </div>
+
+            <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="3" placeholder="补充年收入说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
+            </div>
+
+            <!-- 目标金额 -->
+            <div class="form-group form-row">
+                <label>目标金额: </label>
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" class="form-input-flex" />
+                <span v-else class="text-purple text-bold">{{ formatNumber(targetForm.targetAmount) || '-' }}</span>
+            </div>
+
+            <!-- 目标日期 -->
+            <div class="form-group form-row">
+                <label>目标日期: </label>
+                <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
+                <span v-else>{{ targetForm.targetDate || '-' }}</span>
+            </div>
+
+            <!-- 目标说明（编辑：无标题文本域；查看：虚线框） -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="3" placeholder="补充目标说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.targetRemark || '暂无说明' }}</div>
+            </div>
+
+            <!-- 当前总余额 + 计算按钮 -->
+            <div class="form-group form-row">
+                <label>当前总余额: </label>
+                <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }}</span>
+                <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
+            </div>
+
+            <!-- 计算结果（仅查看态） -->
+            <div v-if="!targetEditable && targetCalculated" class="target-stats">
+                <!-- 距离目标剩余 -->
+                <div class="stat-row">
+                    <span class="stat-label">距离目标剩余: </span>
+                    <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
+                </div>
+                <!-- 公式行（靠右） -->
+                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                    ( 目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
+                </div>
+                <!-- 预计达成日期 -->
+                <div class="stat-row">
+                    <span class="stat-label">剩余金额截止日期: </span>
+                    <span>
+                        <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
+                        <span style="font-size:12px;color:#888;margin-left:8px;">(还剩 {{ targetForm.targetDuration }})</span>
+                    </span>
+                </div>
+                <!-- 公式行（靠右） -->
+                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                    ( 目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }} ≈ {{ Number(targetForm.remaining / targetForm.annualIncome).toFixed(1) }} 年)
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="form-actions">
+                <button class="btn-cancel" @click="closeTargetModal">关闭</button>
+                <template v-if="!targetEditable">
+                    <button class="btn-edit-mode" @click="enableTargetEdit">编辑</button>
+                </template>
+                <template v-else>
+                    <button class="btn-cancel" @click="cancelTargetEdit" style="flex:0.6;">返回</button>
+                    <button class="btn-confirm" @click="saveTarget">保存</button>
                 </template>
             </div>
         </div>
@@ -1185,10 +1348,12 @@
      * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
      * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
      * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
+     * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, targetAmount, targetDate, targetRemark, ... }>）
      */
     var STORAGE_KEYS = {
         RECORDS: 'financial_account_records',
-        BANK_CARD_CONFIGS: 'financial_account_bank_card_configs'
+        BANK_CARD_CONFIGS: 'financial_account_bank_card_configs',
+        TARGET: 'financial_account_target'
     };
 
     function loadConfig() {
@@ -1232,7 +1397,6 @@
             const editIndex = ref(-1);
             const form = ref({});
             const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
-            const remarkExpanded = ref(false); // 只读态备注是否展开（查看更多）
 
             // 银行卡管理
             const bankManagerVisible = ref(false);
@@ -1241,6 +1405,22 @@
             const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
             const editingCardKey = ref('');
             const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
+
+            // 目标
+            const targetModalVisible = ref(false);
+            const targetEditable = ref(false);
+            const targetForm = ref({
+                annualIncome: '',
+                incomeRemark: '',
+                targetAmount: '',
+                targetDate: '',
+                targetRemark: '',
+                currentBalance: 0,
+                remaining: 0,
+                targetDateDisplay: '',
+                targetDuration: ''
+            });
+            const targetCalculated = ref(false);
 
             // 计算
             // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
@@ -1369,19 +1549,70 @@
                 // 按日期降序排列
                 const sorted = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
 
-                // 1. 构建表头
-                const headers = ['日期', '总余额', '总存款', '总负债'];
+                // 1. 构建目标计划部分（若已设置目标）
+                let csv = '';
+
+                // 读取目标数据
+                let targetData = null;
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                    if (raw) targetData = JSON.parse(raw);
+                } catch (_) {
+                }
+
+                if (targetData) {
+                    // 当前总余额：取最新一条记录的余额
+                    const latest = sorted[0];
+                    const currentBalance = latest ? getBalance(latest) : 0;
+
+                    // 剩余金额与预计达成日期（targetForm 计算过才有值）
+                    const remaining = targetForm.value.remaining || 0;
+                    const targetDateDisplay = targetForm.value.targetDateDisplay || '';
+                    const targetDuration = targetForm.value.targetDuration || '';
+
+                    const targetRows = [
+                        ['年收入', targetData.annualIncome || ''],
+                        ['年收入说明', targetData.incomeRemark || ''],
+                        ['目标金额', targetData.targetAmount || ''],
+                        ['目标日期', targetData.targetDate || ''],
+                        ['目标说明', targetData.targetRemark || ''],
+                        ['当前总余额', currentBalance],
+                        ['剩余金额', remaining],
+                        ['预计达成日期', targetDateDisplay],
+                        ['剩余时间', targetDuration]
+                    ];
+
+                    targetRows.forEach(row => {
+                        const escaped = row.map(val => {
+                            if (typeof val === 'string' && (val.includes(',') || val.includes('\n') || val.includes('\r') || val.includes('"'))) {
+                                return '"' + val.replace(/"/g, '""') + '"';
+                            }
+                            return val;
+                        });
+                        csv += escaped.join(',') + '\n';
+                    });
+
+                    // 目标计划与数据表格之间空一行
+                    csv += '\n';
+                }
+
+                // 2. 构建表头
+                const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
                 configs.value.forEach(f => {
                     if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
                     if (f.category.includes('debt')) headers.push(`${f.label}负债`);
                 });
                 headers.push('备注');
 
-                // 2. 构建数据行
-                const rows = sorted.map(item => {
+                // 3. 构建数据行
+                const rows = sorted.map((item, index) => {
+                    // 对比差额：当前记录与下一条（日期更早）记录的余额差
+                    const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
+                    const diff = prev ? getBalance(item) - getBalance(prev) : null;
                     const row = [
                         item.date,
                         getBalance(item),
+                        diff !== null ? diff : '-',
                         getTotalDeposit(item),
                         getTotalDebt(item),
                     ];
@@ -1393,20 +1624,23 @@
                     return row;
                 });
 
-                // 3. 拼接 CSV（含逗号或引号的字段加引号转义）
+                // 4. 拼接数据表格（追加到目标计划部分之后）
                 const lines = [headers.join(',')];
                 rows.forEach(row => {
                     const escaped = row.map(val => {
-                        if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
-                            return '"' + val.replace(/"/g, '""') + '"';
+                        if (typeof val === 'string') {
+                            if (val.includes(',') || val.includes('\n') || val.includes('\r') || val.includes('"')) {
+                                return '"' + val.replace(/"/g, '""') + '"';
+                            }
+                            return val;
                         }
                         return val;
                     });
                     lines.push(escaped.join(','));
                 });
 
-                // 4. 下载
-                const csv = lines.join('\n');
+                // 5. 下载（添加 BOM 确保 Excel 正确识别 UTF-8）
+                csv += lines.join('\n');
                 const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8;'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1425,6 +1659,14 @@
                     return;
                 }
 
+                // 读取目标数据
+                let targetData = null;
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                    if (raw) targetData = JSON.parse(raw);
+                } catch (_) {
+                }
+
                 // 按日期降序排列
                 const sortedForExport = [...records.value].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -1433,6 +1675,7 @@
                     exportTime: new Date().toISOString(),
                     config: configs.value,
                     records: sortedForExport,
+                    target: targetData,
                 };
 
                 const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
@@ -1447,7 +1690,11 @@
                 showToast('✅ 导出成功');
             }
 
-            function triggerImport() {
+            // 导入模式：overwrite=覆盖导入 / merge=合并导入
+            let importMode = 'overwrite';
+
+            function triggerImport(mode) {
+                importMode = mode;
                 document.getElementById('fileInput').click();
             }
 
@@ -1455,25 +1702,55 @@
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
                         if (!data.records || !Array.isArray(data.records)) {
                             showToast('❌ 无效的数据格式');
                             return;
                         }
-                        // 覆盖配置
-                        if (data.config && Array.isArray(data.config)) {
-                            configs.value = data.config;
-                            saveConfig(configs.value);
+                        if (importMode === 'overwrite') {
+                            if (confirm(`将覆盖导入 ${data.records.length} 条记录，当前数据将被替换。确认？`)) {
+                                // 覆盖配置
+                                if (data.config && Array.isArray(data.config)) {
+                                    configs.value = data.config;
+                                    saveConfig(configs.value);
+                                }
+                                // 覆盖记录
+                                records.value = data.records;
+                                saveData();
+                                // 覆盖目标
+                                if (data.target) {
+                                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                                } else {
+                                    localStorage.removeItem(STORAGE_KEYS.TARGET);
+                                }
+                                showToast(`✅ 成功覆盖导入 ${data.records.length} 条记录`);
+                                currentPage.value = 1;
+                            }
+                        } else if (importMode === 'merge') {
+                            // 合并导入：跳过已有日期的记录
+                            let addedCount = 0;
+                            let skippedCount = 0;
+                            const existingDates = new Set(records.value.map(r => r.date));
+                            data.records.forEach(rec => {
+                                if (!existingDates.has(rec.date)) {
+                                    records.value.push(rec);
+                                    addedCount++;
+                                } else {
+                                    skippedCount++;
+                                }
+                            });
+                            saveData();
+                            // 合并目标：有则直接覆盖
+                            if (data.target) {
+                                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                            }
+                            showToast(`✅ 合并导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条（日期重复）`);
+                            currentPage.value = 1;
                         }
-                        // 覆盖记录
-                        records.value = data.records;
-                        saveData();
-                        currentPage.value = 1;
-                        showToast('✅ 导入成功');
                     } catch (err) {
-                        showToast('❌ 文件解析失败');
+                        showToast('❌ JSON 解析失败');
                     }
                 };
                 reader.readAsText(file);
@@ -1555,7 +1832,6 @@
                 editIndex.value = -1;
                 form.value = getDefaultForm();
                 showRemark.value = false;
-                remarkExpanded.value = false;
                 modalVisible.value = true;
             }
 
@@ -1568,7 +1844,6 @@
                 editIndex.value = realIdx;
                 form.value = {...records.value[realIdx]};
                 showRemark.value = !!form.value.remark; // 有备注默认展开
-                remarkExpanded.value = false;
                 modalVisible.value = true;
             }
 
@@ -1641,7 +1916,6 @@
                     form.value = data;
                     editable.value = true;
                     showRemark.value = false;
-                    remarkExpanded.value = false;
                     modalVisible.value = true;
                 }, 100);
             }
@@ -1773,8 +2047,133 @@
                 if (confirm('确认清空所有数据？此操作不可恢复！')) {
                     localStorage.removeItem(STORAGE_KEYS.RECORDS);
                     localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+                    localStorage.removeItem(STORAGE_KEYS.TARGET);
                     location.reload();
                 }
+            }
+
+            // 目标计划
+            /**
+             * 打开目标计划弹窗
+             * 从 localStorage 加载目标数据，最新一条记录的总余额作为当前余额
+             */
+            function openTargetModal() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        targetForm.value = {...targetForm.value, ...data};
+                    }
+                } catch (_) {
+                }
+                // 最新一条记录（日期最新）的总余额作为当前余额
+                const sorted = sortedRecords.value;
+                const latest = sorted.length ? sorted[0] : null;
+                targetForm.value.currentBalance = latest ? getBalance(latest) : 0;
+                targetCalculated.value = false;
+                targetEditable.value = false;
+                targetModalVisible.value = true;
+            }
+
+            function closeTargetModal() {
+                if (targetEditable.value) {
+                    if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
+                }
+                targetModalVisible.value = false;
+            }
+
+            /**
+             * 计算"距离目标剩余"和"预计达成日期"
+             */
+            function calcTarget() {
+                const annual = Number(targetForm.value.annualIncome) || 0;
+                const target = Number(targetForm.value.targetAmount) || 0;
+                const current = Number(targetForm.value.currentBalance) || 0;
+                if (target <= 0 || annual <= 0) {
+                    showToast('请先填写有效的年收入和目标金额');
+                    return;
+                }
+
+                const remaining = target - current;
+                targetForm.value.remaining = remaining;
+
+                // 按年收入估算预计达成日期
+                const monthlyIncome = annual / 12;
+                if (remaining > 0 && monthlyIncome > 0) {
+                    const monthsNeeded = Math.round(remaining / monthlyIncome);
+                    const now = new Date();
+                    const targetDate = new Date(now);
+                    targetDate.setMonth(now.getMonth() + monthsNeeded);
+                    const targetYear = targetDate.getFullYear();
+                    const targetMonth = targetDate.getMonth() + 1;
+                    targetForm.value.targetDateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
+
+                    const years = Math.floor(monthsNeeded / 12);
+                    const months = monthsNeeded % 12;
+                    let duration = '';
+                    if (years > 0) duration += years + '年';
+                    if (months > 0) duration += months + '个月';
+                    if (!duration) duration = '不足1个月';
+                    targetForm.value.targetDuration = duration;
+                } else {
+                    targetForm.value.targetDateDisplay = '已达成或无法计算';
+                    targetForm.value.targetDuration = '';
+                }
+                targetCalculated.value = true;
+            }
+
+            /**
+             * 保存目标计划数据
+             */
+            function saveTarget() {
+                try {
+                    const data = {
+                        annualIncome: targetForm.value.annualIncome,
+                        incomeRemark: targetForm.value.incomeRemark,
+                        targetAmount: targetForm.value.targetAmount,
+                        targetDate: targetForm.value.targetDate,
+                        targetRemark: targetForm.value.targetRemark
+                    };
+                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data));
+                    showToast('✅ 目标已保存');
+                    targetEditable.value = false;
+                } catch (_) {
+                    showToast('❌ 保存失败');
+                }
+            }
+
+            /**
+             * 进入目标编辑态
+             */
+            function enableTargetEdit() {
+                targetEditable.value = true;
+                targetCalculated.value = false; // 进入编辑态隐藏计算结果
+            }
+
+            /**
+             * 取消目标编辑：放弃修改，重载已保存数据
+             */
+            function cancelTargetEdit() {
+                if (targetEditable.value) {
+                    if (!confirm('您有未保存的修改，确定要返回吗？')) return;
+                }
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        targetForm.value = {...targetForm.value, ...data};
+                    }
+                } catch (_) {
+                }
+                targetEditable.value = false;
+                targetCalculated.value = false;
+            }
+
+            /**
+             * 备注展开/收起
+             */
+            function toggleRemark() {
+                showRemark.value = !showRemark.value;
             }
 
             onMounted(() => {
@@ -1806,7 +2205,6 @@
                 editable,
                 form,
                 showRemark,
-                remarkExpanded,
                 displayFields,
                 allConfigs,
                 editableFields,
@@ -1857,6 +2255,19 @@
 
                 // 全屏
                 toggleFullscreen,
+
+                // 目标
+                targetModalVisible,
+                targetEditable,
+                targetForm,
+                targetCalculated,
+                openTargetModal,
+                closeTargetModal,
+                calcTarget,
+                saveTarget,
+                enableTargetEdit,
+                cancelTargetEdit,
+                toggleRemark,
             };
         }
     });

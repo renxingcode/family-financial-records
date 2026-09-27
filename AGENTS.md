@@ -11,7 +11,7 @@
 - **纯前端**：静态 HTML + CSS + JS + LocalStorage，`file://` 直接打开，无需服务器
 - **技术栈**：Vue 3（全局构建版，CDN 引入）+ 原生 JS + LocalStorage
 - **用途**：作者个人使用，也是一份与AI协作开发的个人作品
-- **当前版本**：V0.3（界面重构完成）
+- **当前版本**：V0.4（目标计划板块上线）
 - **质量优先，速度其次**：宁可慢，不可糙
 
 ## 二、目录结构
@@ -53,6 +53,7 @@ family-financial-records/
 ```
 financial_account_records            # 记录数据
 financial_account_bank_card_configs  # 银行卡配置
+financial_account_target             # 目标计划（V0.4 新增）
 ```
 
 ### 数据安全优先
@@ -61,4 +62,4 @@ financial_account_bank_card_configs  # 银行卡配置
 
 ## 六、下一步计划
 
-- **V0.4**：目标计划板块（年收入、目标金额、目标日期、剩余时长计算）
+- **V0.5**：目标计算演进（按年收入估算预计达成日期）、导入导出细节优化
