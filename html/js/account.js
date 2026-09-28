@@ -13,7 +13,7 @@ const VERSION_NUMBER = 1.0;
  * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
  * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
  * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
- * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, targetAmount, targetDate, targetRemark, ... }>）
+ * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, annualExpense, targetDate, targetRemark, ... }>，targetAmount 实时计算不存储）
  */
 var STORAGE_KEYS = {
     RECORDS: 'financial_account_records',
@@ -39,6 +39,107 @@ function saveConfig(config) {
 
 function generateKey() {
     return 'card_' + Date.now();
+}
+
+// 目标相关公共函数
+/**
+ * 计算从今天到目标日期的剩余月数（四舍五入到月）
+ * @param {string} targetDateStr - 目标日期字符串 'YYYY-MM-DD'
+ * @returns {number} 剩余月数，如果日期无效或已过期返回 0
+ */
+function calcMonths(targetDateStr) {
+    if (!targetDateStr) return 0;
+    const now = new Date();
+    const target = new Date(targetDateStr);
+    if (target <= now) return 0;
+    const months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+    const days = target.getDate() - now.getDate();
+    // 如果天数超过 15 天，视为多一个月（四舍五入）
+    return months + (days > 15 ? 1 : 0);
+}
+
+/**
+ * 计算目标金额：每年计划费用 ÷ 12 × 剩余月数
+ * @param {number|string} annualExpense - 每年计划费用
+ * @param {string} targetDateStr - 目标日期字符串
+ * @returns {number} 目标金额，四舍五入到整数
+ */
+function calcTargetAmount(annualExpense, targetDateStr) {
+    const expense = Number(annualExpense) || 0;
+    const months = calcMonths(targetDateStr);
+    if (expense <= 0 || months <= 0) return 0;
+    return Math.round((expense / 12) * months);
+}
+
+/**
+ * 构建完整的目标数据对象（统一数据结构）
+ * @param {Object} form - targetForm 对象
+ * @returns {Object} 包含所有目标字段的完整数据对象
+ */
+function buildTargetData(form) {
+    return {
+        annualIncome: form.annualIncome || '',   // 年收入，用户填写
+        incomeRemark: form.incomeRemark || '',   // 年收入补充说明，用户填写
+        annualExpense: form.annualExpense || '', // 每年计划费用，用户填写
+        targetDate: form.targetDate || '',       // 目标日期，用户填写
+        targetRemark: form.targetRemark || ''    // 目标说明，用户填写
+    };
+}
+
+/**
+ * 格式化剩余月数为「X年X个月之后」
+ * @param {number} months - 月数
+ * @returns {string} 格式化的字符串
+ */
+function formatDuration(months) {
+    if (months <= 0) return '';
+    const years = Math.floor(months / 12);
+    const remainMonths = months % 12;
+    let result = '';
+    if (years > 0) result += years + '年';
+    if (remainMonths > 0) result += remainMonths + '个月';
+    return result + '之后';
+}
+
+/**
+ * 计算距离目标统计：剩余金额、预计达成日期、达成所需时长
+ * @param {number|string} annualIncome - 每年收入
+ * @param {number|string} targetAmount - 目标金额
+ * @param {number|string} currentBalance - 当前总余额
+ * @returns {{remaining: number, targetDateDisplay: string, targetDuration: string}}
+ */
+function calcTargetStats(annualIncome, targetAmount, currentBalance) {
+    const income = Number(annualIncome) || 0;
+    const target = Number(targetAmount) || 0;
+    const current = Number(currentBalance) || 0;
+
+    if (target <= 0 || income <= 0) {
+        return {remaining: 0, targetDateDisplay: '请填写有效数据', targetDuration: ''};
+    }
+
+    const remaining = target - current;
+    const monthlyIncome = income / 12;
+
+    if (remaining > 0 && monthlyIncome > 0) {
+        const monthsNeeded = Math.round(remaining / monthlyIncome);
+        const now = new Date();
+        const targetDate = new Date(now);
+        targetDate.setMonth(now.getMonth() + monthsNeeded);
+        const targetYear = targetDate.getFullYear();
+        const targetMonth = targetDate.getMonth() + 1;
+        const dateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
+
+        const years = Math.floor(monthsNeeded / 12);
+        const monthsRemain = monthsNeeded % 12;
+        let duration = '';
+        if (years > 0) duration += years + '年';
+        if (monthsRemain > 0) duration += monthsRemain + '个月';
+        if (!duration) duration = '不足1个月';
+
+        return {remaining, targetDateDisplay: dateDisplay, targetDuration: duration};
+    } else {
+        return {remaining, targetDateDisplay: '已达成或无法计算', targetDuration: ''};
+    }
 }
 
 const app = createApp({
@@ -87,30 +188,37 @@ const app = createApp({
             targetDuration: ''
         });
         const targetCalculated = ref(false);
+        // 旧版目标数据检测（有目标金额但缺每年计划费用，提示用户补充）
+        const legacyTargetDetected = ref(false);
 
         // 计算
         /**
          * 计算距离目标日期的剩余月数（超过 15 天算一个月）
          */
         const computedMonths = computed(() => {
-            if (!targetForm.value.targetDate) return 0;
-            const now = new Date();
-            const target = new Date(targetForm.value.targetDate);
-            if (target <= now) return 0;
-            const months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
-            const days = target.getDate() - now.getDate();
-            // 天数超过 15 天视为多一个月（四舍五入）
-            return months + (days > 15 ? 1 : 0);
+            return calcMonths(targetForm.value.targetDate);
         });
 
         /**
          * 目标金额自动计算（每年计划费用 ÷ 12 × 剩余月数）
          */
         const computedTargetAmount = computed(() => {
-            const expense = Number(targetForm.value.annualExpense) || 0;
-            const months = computedMonths.value;
-            if (expense <= 0 || months <= 0) return 0;
-            return Math.round((expense / 12) * months);
+            return calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
+        });
+
+        /**
+         * 将月数格式化为「X年X个月之后」
+         */
+        const computedDurationFromMonths = computed(() => {
+            return formatDuration(computedMonths.value);
+        });
+
+        /**
+         * 旧版数据折算的每年计划费用参考值（目标金额 × 12 ÷ 剩余月数）
+         */
+        const legacySuggestedExpense = computed(() => {
+            if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
+            return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
         });
 
         // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
@@ -254,22 +362,22 @@ const app = createApp({
                 // 当前总余额：取最新一条记录的余额
                 const latest = sorted[0];
                 const currentBalance = latest ? getBalance(latest) : 0;
-
-                // 剩余金额与预计达成日期（targetForm 计算过才有值）
-                const remaining = targetForm.value.remaining || 0;
-                const targetDateDisplay = targetForm.value.targetDateDisplay || '';
-                const targetDuration = targetForm.value.targetDuration || '';
+                // 目标金额实时计算（每年计划费用 ÷ 12 × 剩余月数）
+                const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
+                // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
+                const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
 
                 const targetRows = [
                     ['年收入', targetData.annualIncome || ''],
                     ['年收入说明', targetData.incomeRemark || ''],
-                    ['目标金额', targetData.targetAmount || ''],
+                    ['每年计划费用', targetData.annualExpense || ''],
                     ['目标日期', targetData.targetDate || ''],
+                    ['目标金额', targetAmount],
                     ['目标说明', targetData.targetRemark || ''],
                     ['当前总余额', currentBalance],
-                    ['剩余金额', remaining],
-                    ['预计达成日期', targetDateDisplay],
-                    ['剩余时间', targetDuration]
+                    ['剩余金额', targetCalc.remaining],
+                    ['预计达成日期', targetCalc.targetDateDisplay],
+                    ['剩余时间', targetCalc.targetDuration]
                 ];
 
                 targetRows.forEach(row => {
@@ -756,6 +864,8 @@ const app = createApp({
                 }
             } catch (_) {
             }
+            // 检测旧版目标数据（有目标金额但缺每年计划费用，提示用户补充）
+            legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
             // 最新一条记录（日期最新）的总余额作为当前余额
             const sorted = sortedRecords.value;
             const latest = sorted.length ? sorted[0] : null;
@@ -770,6 +880,7 @@ const app = createApp({
                 if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
             }
             targetModalVisible.value = false;
+            legacyTargetDetected.value = false;
         }
 
         /**
@@ -777,51 +888,19 @@ const app = createApp({
          */
         function calcTarget() {
             const annual = Number(targetForm.value.annualIncome) || 0;
-            const expense = Number(targetForm.value.annualExpense) || 0;
-            const months = computedMonths.value;
+            const target = calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
             const current = Number(targetForm.value.currentBalance) || 0;
-
-            // 精确校验
-            if (annual <= 0) {
-                showToast('请先填写有效的年收入');
-                return;
-            }
-            if (expense <= 0) {
-                showToast('请先填写有效的每年计划费用');
-                return;
-            }
-            if (months <= 0) {
-                showToast('请选择有效的目标日期（需在未来）');
+            if (target <= 0 || annual <= 0) {
+                showToast('请先填写有效的年收入和目标金额');
                 return;
             }
 
-            const target = Math.round((expense / 12) * months);
-            targetForm.value.targetAmount = target;
-            const remaining = target - current;
-            targetForm.value.remaining = remaining;
-
-            // 按年收入估算预计达成日期
-            const monthlyIncome = annual / 12;
-            if (remaining > 0 && monthlyIncome > 0) {
-                const monthsNeeded = Math.round(remaining / monthlyIncome);
-                const now = new Date();
-                const targetDate = new Date(now);
-                targetDate.setMonth(now.getMonth() + monthsNeeded);
-                const targetYear = targetDate.getFullYear();
-                const targetMonth = targetDate.getMonth() + 1;
-                targetForm.value.targetDateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
-
-                const years = Math.floor(monthsNeeded / 12);
-                const monthsRemain = monthsNeeded % 12;
-                let duration = '';
-                if (years > 0) duration += years + '年';
-                if (monthsRemain > 0) duration += monthsRemain + '个月';
-                if (!duration) duration = '不足1个月';
-                targetForm.value.targetDuration = duration;
-            } else {
-                targetForm.value.targetDateDisplay = '已达成或无法计算';
-                targetForm.value.targetDuration = '';
-            }
+            targetForm.value.targetAmount = target; // 仅用于计算结果快照展示，不存到存储
+            // 复用公共计算函数（与 CSV 导出逻辑一致）
+            const result = calcTargetStats(annual, target, current);
+            targetForm.value.remaining = result.remaining;
+            targetForm.value.targetDateDisplay = result.targetDateDisplay;
+            targetForm.value.targetDuration = result.targetDuration;
             targetCalculated.value = true;
         }
 
@@ -830,14 +909,10 @@ const app = createApp({
          */
         function saveTarget() {
             try {
-                const data = {
-                    annualIncome: targetForm.value.annualIncome,
-                    incomeRemark: targetForm.value.incomeRemark,
-                    annualExpense: targetForm.value.annualExpense, // 保存每年计划费用
-                    targetDate: targetForm.value.targetDate,
-                    targetRemark: targetForm.value.targetRemark
-                };
+                // 使用公共函数构建完整数据（自动计算目标金额）
+                const data = buildTargetData(targetForm.value);
                 localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data));
+
                 showToast('✅ 目标已保存');
                 targetEditable.value = false;
             } catch (_) {
@@ -870,6 +945,7 @@ const app = createApp({
             }
             targetEditable.value = false;
             targetCalculated.value = false;
+            showToast('已返回详情');
         }
 
         /**
@@ -966,6 +1042,9 @@ const app = createApp({
             targetCalculated,
             computedTargetAmount,
             computedMonths,
+            computedDurationFromMonths,
+            legacyTargetDetected,
+            legacySuggestedExpense,
             openTargetModal,
             closeTargetModal,
             calcTarget,

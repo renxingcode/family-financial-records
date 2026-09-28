@@ -930,3 +930,14 @@ body {
         font-size: 12px;
     }
 }
+
+.legacy-tip {
+    margin-top: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #e67e22;
+    background: #fdf3e3;
+    border: 1px solid #f5d9a8;
+    border-radius: 6px;
+}
