@@ -472,6 +472,12 @@ body {
     flex: 1;
 }
 
+/* 目标弹窗 - label 顶部对齐 */
+.align-label-top label {
+    align-self: flex-start;
+    padding-top: 2px;
+}
+
 /* 存款/负债输入框（蓝色 / 粉色边框） */
 .form-group .input-deposit {
     color: #2980b9;

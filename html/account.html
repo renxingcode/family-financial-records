@@ -269,11 +269,11 @@
                 <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
-            <!-- 目标金额 -->
+            <!-- 每年计划费用 -->
             <div class="form-group form-row">
-                <label>目标金额: </label>
-                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" class="form-input-flex" />
-                <span v-else class="text-purple text-bold">{{ formatNumber(targetForm.targetAmount) || '-' }}</span>
+                <label>每年计划费用: </label>
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
+                <span v-else class="text-blue">{{ formatNumber(targetForm.annualExpense) || '-' }}</span>
             </div>
 
             <!-- 目标日期 -->
@@ -281,6 +281,17 @@
                 <label>目标日期: </label>
                 <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
                 <span v-else>{{ targetForm.targetDate || '-' }}</span>
+            </div>
+
+            <!-- 目标金额（自动计算，只读展示） -->
+            <div v-if="targetForm.annualExpense && targetForm.targetDate" class="form-group form-row align-label-top">
+                <label>目标金额: </label>
+                <div style="flex:1;">
+                    <div class="text-purple text-bold">{{ formatNumber(computedTargetAmount) }} 元</div>
+                    <div style="font-size:12px;color:#888;margin-top:2px;">
+                        ({{ formatNumber(targetForm.annualExpense) }} ÷ 12 × {{ computedMonths }} 个月)
+                    </div>
+                </div>
             </div>
 
             <!-- 目标说明（编辑：无标题文本域；查看：虚线框） -->
@@ -304,7 +315,7 @@
                     <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
                 </div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                <div style="text-align:right; font-size:12px; color:#888; border-bottom:1px solid #DDD; padding-bottom:8px">
                     ( 目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
                 </div>
                 <!-- 预计达成日期 -->
@@ -316,7 +327,7 @@
                     </span>
                 </div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
+                <div style="text-align:right; font-size:12px; color:#888; border-bottom:1px solid #DDD; padding-bottom:8px">
                     ( 目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }} ≈ {{ Number(targetForm.remaining / targetForm.annualIncome).toFixed(1) }} 年)
                 </div>
             </div>

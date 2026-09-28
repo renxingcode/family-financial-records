@@ -77,7 +77,8 @@ const app = createApp({
         const targetForm = ref({
             annualIncome: '',
             incomeRemark: '',
-            targetAmount: '',
+            annualExpense: '',   // 每年计划费用
+            targetAmount: 0,     // 目标金额自动计算，不再手工输入
             targetDate: '',
             targetRemark: '',
             currentBalance: 0,
@@ -88,6 +89,30 @@ const app = createApp({
         const targetCalculated = ref(false);
 
         // 计算
+        /**
+         * 计算距离目标日期的剩余月数（超过 15 天算一个月）
+         */
+        const computedMonths = computed(() => {
+            if (!targetForm.value.targetDate) return 0;
+            const now = new Date();
+            const target = new Date(targetForm.value.targetDate);
+            if (target <= now) return 0;
+            const months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+            const days = target.getDate() - now.getDate();
+            // 天数超过 15 天视为多一个月（四舍五入）
+            return months + (days > 15 ? 1 : 0);
+        });
+
+        /**
+         * 目标金额自动计算（每年计划费用 ÷ 12 × 剩余月数）
+         */
+        const computedTargetAmount = computed(() => {
+            const expense = Number(targetForm.value.annualExpense) || 0;
+            const months = computedMonths.value;
+            if (expense <= 0 || months <= 0) return 0;
+            return Math.round((expense / 12) * months);
+        });
+
         // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
         const displayFields = computed(() => {
             return configs.value;
@@ -752,13 +777,26 @@ const app = createApp({
          */
         function calcTarget() {
             const annual = Number(targetForm.value.annualIncome) || 0;
-            const target = Number(targetForm.value.targetAmount) || 0;
+            const expense = Number(targetForm.value.annualExpense) || 0;
+            const months = computedMonths.value;
             const current = Number(targetForm.value.currentBalance) || 0;
-            if (target <= 0 || annual <= 0) {
-                showToast('请先填写有效的年收入和目标金额');
+
+            // 精确校验
+            if (annual <= 0) {
+                showToast('请先填写有效的年收入');
+                return;
+            }
+            if (expense <= 0) {
+                showToast('请先填写有效的每年计划费用');
+                return;
+            }
+            if (months <= 0) {
+                showToast('请选择有效的目标日期（需在未来）');
                 return;
             }
 
+            const target = Math.round((expense / 12) * months);
+            targetForm.value.targetAmount = target;
             const remaining = target - current;
             targetForm.value.remaining = remaining;
 
@@ -774,10 +812,10 @@ const app = createApp({
                 targetForm.value.targetDateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
 
                 const years = Math.floor(monthsNeeded / 12);
-                const months = monthsNeeded % 12;
+                const monthsRemain = monthsNeeded % 12;
                 let duration = '';
                 if (years > 0) duration += years + '年';
-                if (months > 0) duration += months + '个月';
+                if (monthsRemain > 0) duration += monthsRemain + '个月';
                 if (!duration) duration = '不足1个月';
                 targetForm.value.targetDuration = duration;
             } else {
@@ -795,7 +833,7 @@ const app = createApp({
                 const data = {
                     annualIncome: targetForm.value.annualIncome,
                     incomeRemark: targetForm.value.incomeRemark,
-                    targetAmount: targetForm.value.targetAmount,
+                    annualExpense: targetForm.value.annualExpense, // 保存每年计划费用
                     targetDate: targetForm.value.targetDate,
                     targetRemark: targetForm.value.targetRemark
                 };
@@ -926,6 +964,8 @@ const app = createApp({
             targetEditable,
             targetForm,
             targetCalculated,
+            computedTargetAmount,
+            computedMonths,
             openTargetModal,
             closeTargetModal,
             calcTarget,
