@@ -319,20 +319,28 @@ const app = createApp({
 
         /**
          * 记录弹窗中是否显示该银行卡字段
-         * 添加/编辑态：始终显示（编辑态需要所有卡都可输入）
-         * 查看态：只显示该记录中有非零金额的卡，避免大量 0 值占位
+         * 添加模式：只显示未禁用的银行卡
+         * 编辑模式：显示所有未禁用卡，以及该记录中有非零金额的禁用卡（历史数据可继续修改）
+         * 查看模式：只显示该记录中有非零金额的卡，避免大量 0 值占位
          * @param {Object} f - 银行卡配置项
          * @returns {boolean}
          */
         function shouldShowFieldInModal(f) {
-            if (modalMode.value === 'add' || editable.value) {
-                return true;
+            // 添加模式：只显示未禁用的银行卡
+            if (modalMode.value === 'add') {
+                return !f.disabled;
             }
-            // 查看态：检查该记录中该卡是否有非零金额
-            return f.category.some(type => {
+            // 该记录中该卡是否有非零金额
+            const hasNonZero = f.category.some(type => {
                 const val = Number(form.value[f.key + '_' + type]) || 0;
                 return val !== 0;
             });
+            // 编辑模式：未禁用 或 该记录有非零金额（含已禁用卡的历史数据）
+            if (editable.value) {
+                return !f.disabled || hasNonZero;
+            }
+            // 查看模式：只显示有非零金额的卡
+            return hasNonZero;
         }
 
         function prevPage() {
