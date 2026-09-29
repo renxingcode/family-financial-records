@@ -108,7 +108,7 @@
     </div>
 
     <!-- 添加/编辑弹窗 -->
-    <div v-if="modalVisible" class="modal-overlay" @click.self="confirmClose">
+    <div v-if="modalVisible" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">
                 <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
@@ -249,8 +249,8 @@
     </div>
 
     <!-- 目标弹窗 -->
-    <div v-if="targetModalVisible" class="modal-overlay" @click.self="closeTargetModal">
-        <div class="modal-box" style="max-width:520px;">
+    <div v-if="targetModalVisible" class="modal-overlay">
+        <div class="modal-box target-modal-box">
             <div class="modal-title">
                 <span>🎯 目标计划</span>
                 <button class="close-btn" @click="closeTargetModal">✕</button>
@@ -333,30 +333,56 @@
                 <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 
-            <hr style="margin: 16px 0 8px; border: 0; border-top: 2px dashed #d68910;">
+            <hr v-if="!targetEditable && targetCalculated" class="divider-orange">
 
             <!-- 计算结果（仅查看态） -->
             <div v-if="!targetEditable && targetCalculated" class="target-stats">
-                <!-- 距离目标剩余 -->
+                <div class="distance-target-calculated-label">距离目标剩余金额和截止日期: </div>
+                <div class="distance-target-hint">按照当前收入和支出水平不变，不需要奋斗到目标日期，提前到什么时候可以达成目标？</div>
+                <!-- 距离目标剩余金额 -->
                 <div class="stat-row">
-                    <span class="stat-label">距离目标剩余: </span>
+                    <span class="stat-label">距离目标剩余金额: </span>
                     <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
                 </div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; border-bottom:1px solid #DDD; padding-bottom:8px">
-                    (目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
+                <div class="stat-formula-row">
+                    (目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }})
                 </div>
-                <!-- 预计达成日期 -->
+                <!-- 剩余金额截止日期 -->
                 <div class="stat-row">
                     <span class="stat-label">剩余金额截止日期: </span>
                     <span>
                         <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
-                        <span style="font-size:12px;color:#888;margin-left:8px;">(还剩 {{ targetForm.targetDuration }})</span>
                     </span>
                 </div>
+                <!-- 剩余时间（按年收入估算的达成所需时长） -->
+                <div class="stat-formula-row-none-border">还剩 {{ targetForm.targetDuration }}</div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; border-bottom:1px solid #DDD; padding-bottom:8px">
+                <div class="stat-formula-row">
                     (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }})
+                </div>
+            </div>
+
+            <hr v-if="!targetEditable && targetCalculated" class="divider-orange">
+
+            <!-- 每月最低收入（仅查看态，且已点击"开始计算"后显示） -->
+            <div v-if="!targetEditable && targetCalculated" class="target-stats">
+                <div class="distance-target-calculated-label target-label-green">距离目标日期每月最低收入: </div>
+                <div class="distance-target-hint">一直奋斗到目标日期，每个月收入不能低于多少钱？</div>
+                <!-- 每月最低收入 -->
+                <div class="stat-row">
+                    <span class="stat-label">每月最低收入: </span>
+                    <span class="stat-value stat-value-green">{{ formatNumber((targetForm.remaining / computedMonths).toFixed(0)) }} 元</span>
+                </div>
+                <!-- 每年最低收入 -->
+                <div class="stat-row">
+                    <span class="stat-label">每年最低收入(每月×12): </span>
+                    <span class="stat-value stat-value-green">{{ formatNumber((targetForm.remaining / computedMonths * 12).toFixed(0)) }} 元</span>
+                </div>
+                <!-- 公式行 -->
+                <div class="stat-formula-row-none-border stat-value-amber">从现在 到 {{ formatDateToDot(targetForm.targetDate) }}，还剩下 {{ computedMonths }} 个月</div>
+                <div class="stat-formula-row">
+                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 剩余总月份 {{ computedMonths }} 个月)
                 </div>
             </div>
 
@@ -375,7 +401,7 @@
     </div>
 
     <!-- 银行卡管理弹窗 -->
-    <div v-if="bankManagerVisible" class="modal-overlay" @click.self="bankManagerVisible = false">
+    <div v-if="bankManagerVisible" class="modal-overlay">
         <div class="modal-box" style="max-width:520px;">
             <div class="modal-title">
                 <span>💳 银行卡管理</span>
@@ -412,7 +438,7 @@
     </div>
 
     <!-- 新增/编辑银行卡弹窗 -->
-    <div v-if="bankFormVisible" class="modal-overlay" @click.self="closeBankCardForm">
+    <div v-if="bankFormVisible" class="modal-overlay">
         <div class="modal-box" style="max-width:400px;">
             <div class="modal-title">
                 <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>

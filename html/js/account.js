@@ -102,6 +102,20 @@ function formatDuration(months) {
 }
 
 /**
+ * 日期格式化为点分格式 'YYYY-MM-DD' -> 'YYYY.MM.DD'
+ * @param {string} dateStr - 日期字符串
+ * @returns {string} 点分格式的日期
+ */
+function formatDateToDot(dateStr) {
+    if (!dateStr) return '-';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return parts[0] + '.' + parts[1] + '.' + parts[2];
+    }
+    return dateStr;
+}
+
+/**
  * 计算距离目标统计：剩余金额、预计达成日期、达成所需时长
  * @param {number|string} annualIncome - 每年收入
  * @param {number|string} targetAmount - 目标金额
@@ -1002,6 +1016,7 @@ const app = createApp({
             getBalance,
             getDiff,
             formatNumber,
+            formatDateToDot,
             shouldShowFieldInModal,
 
             openAddModal,
