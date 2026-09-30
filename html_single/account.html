@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>家庭账户管理V0.4</title>
+    <title>家庭账户管理V0.5</title>
     <style>
         /* 全局重置 */
         * {
@@ -275,6 +275,18 @@
             color: #aaa;
         }
 
+        .fs-12 {
+            font-size: 12px;
+        }
+
+        .text-darkred {
+            color: darkred;
+        }
+
+        .text-darkgreen {
+            color: darkgreen;
+        }
+
         .empty-cell {
             color: #ccc;
         }
@@ -479,6 +491,65 @@
             flex: 1;
         }
 
+        /* 目标弹窗 - label 顶部对齐 */
+        .align-label-top label {
+            align-self: flex-start;
+            padding-top: 2px;
+        }
+
+        /* 目标弹窗宽度 */
+        .target-modal-box {
+            max-width: 520px;
+        }
+
+        /* 结果区公式行（靠右，底部边框分隔） */
+        .stat-formula-row {
+            text-align: right;
+            font-size: 12px;
+            color: #888;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+        .stat-formula-row-none-border {
+            text-align: right;
+            font-size: 12px;
+            color: #db5e8c;
+        }
+
+        /* 目标计算提示与标签 */
+        .distance-target-hint {
+            font-size: 12px;
+            color: #7461aa;
+            font-style: italic;
+            padding: 6px 0 6px 14px;
+            border-left: 3px solid #ccc;
+            margin: 4px 0;
+            line-height: 1.6;
+        }
+        .distance-target-calculated-label {
+            font-size: 16px;
+            color: #61a8dd;
+            margin-bottom: 0;
+        }
+
+        /* 结果区颜色辅助类 */
+        .stat-value-green {
+            color: green;
+        }
+        .stat-value-amber {
+            color: #2b72ae;
+        }
+        .target-label-green {
+            color: #27ae60;
+        }
+
+        /* 结果区分隔线 */
+        .divider-orange {
+            margin: 16px 0 8px;
+            border: 0;
+            border-top: 2px dashed #d68910;
+        }
+
         /* 存款/负债输入框（蓝色 / 粉色边框） */
         .form-group .input-deposit {
             color: #2980b9;
@@ -510,37 +581,6 @@
             font-size: 11px;
             color: #999;
             margin-right: 5px;
-        }
-
-        /* 查看态汇总卡片 */
-        .summary-box {
-            background: #f7f8fa;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 4px;
-        }
-
-        .summary-line {
-            display: flex;
-            gap: 18px;
-            flex-wrap: wrap;
-            font-size: 14px;
-        }
-
-        .summary-line .item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .summary-line .item .label {
-            color: #888;
-            font-size: 13px;
-        }
-
-        .summary-line .item .value {
-            font-weight: 600;
-            font-size: 15px;
         }
 
         /* 备注展开收起 */
@@ -931,6 +971,17 @@
                 font-size: 12px;
             }
         }
+
+        .legacy-tip {
+            margin-top: 6px;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #e67e22;
+            background: #fdf3e3;
+            border: 1px solid #f5d9a8;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -938,7 +989,7 @@
 
     <!-- 头部 -->
     <div class="app-header">
-        <h1>📊 家庭账户V0.4</h1>
+        <h1>📊 家庭账户V0.5</h1>
         <div class="header-actions">
             <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
             <button class="btn-target" @click="openTargetModal">🎯 目标</button>
@@ -1035,42 +1086,39 @@
     </div>
 
     <!-- 添加/编辑弹窗 -->
-    <div v-if="modalVisible" class="modal-overlay" @click.self="confirmClose">
+    <div v-if="modalVisible" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">
                 <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
                 <button class="close-btn" @click="confirmClose">✕</button>
             </div>
 
-            <!-- 查看态汇总 -->
-            <template v-if="modalMode === 'edit' && !editable">
-                <div class="summary-box">
-                    <div class="summary-line">
-                        <span class="item">
-                            <span class="label">总余额</span>
-                            <span class="value" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
-                                {{ formatNumber(getBalance(form)) }}
-                            </span>
-                        </span>
-                        <span class="item">
-                            <span class="label">总存款</span>
-                            <span class="value text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
-                        </span>
-                        <span class="item">
-                            <span class="label">总负债</span>
-                            <span class="value text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
-                        </span>
-                    </div>
-                </div>
-                <hr class="form-divider">
-            </template>
-
             <!-- 日期 -->
             <div class="form-group form-row">
-                <label>日期</label>
+                <label>【日期】</label>
                 <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
-                <span v-else>{{ form.date }}</span>
+                <span v-else>{{ formatDateToDot(form.date) }}</span>
             </div>
+
+            <!-- 查看态汇总 -->
+            <template v-if="modalMode === 'edit' && !editable">
+                <div class="form-group form-row">
+                    <label>【总余额】</label>
+                    <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                        {{ formatNumber(getBalance(form)) }} 元
+                    </span>
+                    <span class="text-muted fs-12">( {{ formatNumber(getTotalDeposit(form)) }} - {{ formatNumber(getTotalDebt(form)) }} )</span>
+                </div>
+                <div class="form-group form-row">
+                    <label>【汇总】</label>
+                    <div class="field-wrapper">
+                        <span class="sub-input"><span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span></span>
+                        <span class="sub-input"><span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span></span>
+                    </div>
+                </div>
+            </template>
+
+            <hr class="form-divider">
 
             <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
@@ -1176,8 +1224,8 @@
     </div>
 
     <!-- 目标弹窗 -->
-    <div v-if="targetModalVisible" class="modal-overlay" @click.self="closeTargetModal">
-        <div class="modal-box" style="max-width:520px;">
+    <div v-if="targetModalVisible" class="modal-overlay">
+        <div class="modal-box target-modal-box">
             <div class="modal-title">
                 <span>🎯 目标计划</span>
                 <button class="close-btn" @click="closeTargetModal">✕</button>
@@ -1187,20 +1235,40 @@
             <div class="form-group form-row">
                 <label>年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
-                <span v-else class="text-blue">{{ formatNumber(targetForm.annualIncome) || '-' }}</span>
+                <span v-else class="text-blue">
+                    {{ formatNumber(targetForm.annualIncome) || '-' }}
+                    <span v-if="targetForm.annualIncome > 0" class="text-darkred fs-12">(平均每月 {{ formatNumber((targetForm.annualIncome / 12).toFixed(0)) }} 元)</span>
+                </span>
             </div>
 
             <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="3" placeholder="补充年收入说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="补充年收入说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
-            <!-- 目标金额 -->
+            <!-- 每年计划费用 -->
             <div class="form-group form-row">
-                <label>目标金额: </label>
-                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.targetAmount" placeholder="元" class="form-input-flex" />
-                <span v-else class="text-purple text-bold">{{ formatNumber(targetForm.targetAmount) || '-' }}</span>
+                <label>每年计划费用: </label>
+                <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
+                <span v-else class="text-blue">
+                    {{ formatNumber(targetForm.annualExpense) || '-' }}
+                    <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
+                </span>
+            </div>
+            <!-- 旧版目标数据兼容提示 -->
+            <div v-if="legacyTargetDetected" class="legacy-tip">
+                <template v-if="targetEditable">
+                    <template v-if="computedMonths > 0">
+                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年计划费用约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
+                    </template>
+                    <template v-else>
+                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年计划费用。
+                    </template>
+                </template>
+                <template v-else>
+                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年计划费用」自动计算目标金额，请点击「编辑」补充每年计划费用。
+                </template>
             </div>
 
             <!-- 目标日期 -->
@@ -1208,11 +1276,34 @@
                 <label>目标日期: </label>
                 <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
                 <span v-else>{{ targetForm.targetDate || '-' }}</span>
+                <!-- 查看态且日期有效时，显示剩余时间 -->
+                <span v-if="!targetEditable && targetForm.targetDate && computedMonths > 0" style="font-size:12px;color:#888;margin-left:1px;flex-shrink:0;">
+                    （{{ computedDurationFromMonths }}）
+                </span>
+            </div>
+
+            <!-- 目标金额（查看态显示，编辑态隐藏） -->
+            <div v-if="!targetEditable" class="form-group form-row align-label-top">
+                <label>目标金额: </label>
+                <div style="flex:1;">
+                    <!-- 有数据时显示金额 -->
+                    <template v-if="computedTargetAmount > 0">
+                        <div class="text-purple text-bold">{{ formatNumber(computedTargetAmount) }} 元</div>
+                        <!-- 每年计划费用存在时才显示公式（旧版数据缺该字段则不显示） -->
+                        <div v-if="targetForm.annualExpense" style="font-size:12px;color:#888;margin-top:2px;">
+                            ({{ formatNumber(targetForm.annualExpense) }} ÷ 12 × {{ computedMonths }} 个月)
+                        </div>
+                    </template>
+                    <!-- 无数据时显示 - -->
+                    <template v-else>
+                        <span>-</span>
+                    </template>
+                </div>
             </div>
 
             <!-- 目标说明（编辑：无标题文本域；查看：虚线框） -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="3" placeholder="补充目标说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="5" placeholder="补充目标说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.targetRemark || '暂无说明' }}</div>
             </div>
 
@@ -1223,28 +1314,56 @@
                 <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 
+            <hr v-if="!targetEditable && targetCalculated" class="divider-orange">
+
             <!-- 计算结果（仅查看态） -->
             <div v-if="!targetEditable && targetCalculated" class="target-stats">
-                <!-- 距离目标剩余 -->
+                <div class="distance-target-calculated-label">距离目标剩余金额和截止日期: </div>
+                <div class="distance-target-hint">按照当前收入和支出水平不变，不需要奋斗到目标日期，提前到什么时候可以达成目标？</div>
+                <!-- 距离目标剩余金额 -->
                 <div class="stat-row">
-                    <span class="stat-label">距离目标剩余: </span>
+                    <span class="stat-label">距离目标剩余金额: </span>
                     <span class="stat-value big-red">{{ formatNumber(targetForm.remaining) }} 元</span>
                 </div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
-                    ( 目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }} = {{ formatNumber(targetForm.remaining) }})
+                <div class="stat-formula-row">
+                    (目标金额 {{ formatNumber(targetForm.targetAmount) }} - 当前余额 {{ formatNumber(targetForm.currentBalance) }})
                 </div>
-                <!-- 预计达成日期 -->
+                <!-- 剩余金额截止日期 -->
                 <div class="stat-row">
                     <span class="stat-label">剩余金额截止日期: </span>
                     <span>
                         <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
-                        <span style="font-size:12px;color:#888;margin-left:8px;">(还剩 {{ targetForm.targetDuration }})</span>
                     </span>
                 </div>
+                <!-- 剩余时间（按年收入估算的达成所需时长） -->
+                <div class="stat-formula-row-none-border">还剩 {{ targetForm.targetDuration }}</div>
                 <!-- 公式行（靠右） -->
-                <div style="text-align:right; font-size:12px; color:#888; padding-right:4px; border-bottom:1px solid #DDD; padding-bottom:8px">
-                    ( 目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }} ≈ {{ Number(targetForm.remaining / targetForm.annualIncome).toFixed(1) }} 年)
+                <div class="stat-formula-row">
+                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }})
+                </div>
+            </div>
+
+            <hr v-if="!targetEditable && targetCalculated" class="divider-orange">
+
+            <!-- 每月最低收入（仅查看态，且已点击"开始计算"后显示） -->
+            <div v-if="!targetEditable && targetCalculated" class="target-stats">
+                <div class="distance-target-calculated-label target-label-green">距离目标日期每月最低收入: </div>
+                <div class="distance-target-hint">一直奋斗到目标日期，每个月收入不能低于多少钱？</div>
+                <!-- 每月最低收入 -->
+                <div class="stat-row">
+                    <span class="stat-label">每月最低收入: </span>
+                    <span class="stat-value stat-value-green">{{ formatNumber((targetForm.remaining / computedMonths).toFixed(0)) }} 元</span>
+                </div>
+                <!-- 每年最低收入 -->
+                <div class="stat-row">
+                    <span class="stat-label">每年最低收入(每月×12): </span>
+                    <span class="stat-value stat-value-green">{{ formatNumber((targetForm.remaining / computedMonths * 12).toFixed(0)) }} 元</span>
+                </div>
+                <!-- 公式行 -->
+                <div class="stat-formula-row-none-border stat-value-amber">从现在 到 {{ formatDateToDot(targetForm.targetDate) }}，还剩下 {{ computedMonths }} 个月</div>
+                <div class="stat-formula-row">
+                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 剩余总月份 {{ computedMonths }} 个月)
                 </div>
             </div>
 
@@ -1263,7 +1382,7 @@
     </div>
 
     <!-- 银行卡管理弹窗 -->
-    <div v-if="bankManagerVisible" class="modal-overlay" @click.self="bankManagerVisible = false">
+    <div v-if="bankManagerVisible" class="modal-overlay">
         <div class="modal-box" style="max-width:520px;">
             <div class="modal-title">
                 <span>💳 银行卡管理</span>
@@ -1300,7 +1419,7 @@
     </div>
 
     <!-- 新增/编辑银行卡弹窗 -->
-    <div v-if="bankFormVisible" class="modal-overlay" @click.self="closeBankCardForm">
+    <div v-if="bankFormVisible" class="modal-overlay">
         <div class="modal-box" style="max-width:400px;">
             <div class="modal-title">
                 <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
@@ -1348,7 +1467,7 @@
      * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
      * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
      * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
-     * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, targetAmount, targetDate, targetRemark, ... }>）
+     * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, annualExpense, targetDate, targetRemark, ... }>，targetAmount 实时计算不存储）
      */
     var STORAGE_KEYS = {
         RECORDS: 'financial_account_records',
@@ -1374,6 +1493,121 @@
 
     function generateKey() {
         return 'card_' + Date.now();
+    }
+
+    // 目标相关公共函数
+    /**
+     * 计算从今天到目标日期的剩余月数（四舍五入到月）
+     * @param {string} targetDateStr - 目标日期字符串 'YYYY-MM-DD'
+     * @returns {number} 剩余月数，如果日期无效或已过期返回 0
+     */
+    function calcMonths(targetDateStr) {
+        if (!targetDateStr) return 0;
+        const now = new Date();
+        const target = new Date(targetDateStr);
+        if (target <= now) return 0;
+        const months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+        const days = target.getDate() - now.getDate();
+        // 如果天数超过 15 天，视为多一个月（四舍五入）
+        return months + (days > 15 ? 1 : 0);
+    }
+
+    /**
+     * 计算目标金额：每年计划费用 ÷ 12 × 剩余月数
+     * @param {number|string} annualExpense - 每年计划费用
+     * @param {string} targetDateStr - 目标日期字符串
+     * @returns {number} 目标金额，四舍五入到整数
+     */
+    function calcTargetAmount(annualExpense, targetDateStr) {
+        const expense = Number(annualExpense) || 0;
+        const months = calcMonths(targetDateStr);
+        if (expense <= 0 || months <= 0) return 0;
+        return Math.round((expense / 12) * months);
+    }
+
+    /**
+     * 构建完整的目标数据对象（统一数据结构）
+     * @param {Object} form - targetForm 对象
+     * @returns {Object} 包含所有目标字段的完整数据对象
+     */
+    function buildTargetData(form) {
+        return {
+            annualIncome: form.annualIncome || '',   // 年收入，用户填写
+            incomeRemark: form.incomeRemark || '',   // 年收入补充说明，用户填写
+            annualExpense: form.annualExpense || '', // 每年计划费用，用户填写
+            targetDate: form.targetDate || '',       // 目标日期，用户填写
+            targetRemark: form.targetRemark || ''    // 目标说明，用户填写
+        };
+    }
+
+    /**
+     * 格式化剩余月数为「X年X个月之后」
+     * @param {number} months - 月数
+     * @returns {string} 格式化的字符串
+     */
+    function formatDuration(months) {
+        if (months <= 0) return '';
+        const years = Math.floor(months / 12);
+        const remainMonths = months % 12;
+        let result = '';
+        if (years > 0) result += years + '年';
+        if (remainMonths > 0) result += remainMonths + '个月';
+        return result + '之后';
+    }
+
+    /**
+     * 日期格式化为点分格式 'YYYY-MM-DD' -> 'YYYY.MM.DD'
+     * @param {string} dateStr - 日期字符串
+     * @returns {string} 点分格式的日期
+     */
+    function formatDateToDot(dateStr) {
+        if (!dateStr) return '-';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            return parts[0] + '.' + parts[1] + '.' + parts[2];
+        }
+        return dateStr;
+    }
+
+    /**
+     * 计算距离目标统计：剩余金额、预计达成日期、达成所需时长
+     * @param {number|string} annualIncome - 每年收入
+     * @param {number|string} targetAmount - 目标金额
+     * @param {number|string} currentBalance - 当前总余额
+     * @returns {{remaining: number, targetDateDisplay: string, targetDuration: string}}
+     */
+    function calcTargetStats(annualIncome, targetAmount, currentBalance) {
+        const income = Number(annualIncome) || 0;
+        const target = Number(targetAmount) || 0;
+        const current = Number(currentBalance) || 0;
+
+        if (target <= 0 || income <= 0) {
+            return {remaining: 0, targetDateDisplay: '请填写有效数据', targetDuration: ''};
+        }
+
+        const remaining = target - current;
+        const monthlyIncome = income / 12;
+
+        if (remaining > 0 && monthlyIncome > 0) {
+            const monthsNeeded = Math.round(remaining / monthlyIncome);
+            const now = new Date();
+            const targetDate = new Date(now);
+            targetDate.setMonth(now.getMonth() + monthsNeeded);
+            const targetYear = targetDate.getFullYear();
+            const targetMonth = targetDate.getMonth() + 1;
+            const dateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
+
+            const years = Math.floor(monthsNeeded / 12);
+            const monthsRemain = monthsNeeded % 12;
+            let duration = '';
+            if (years > 0) duration += years + '年';
+            if (monthsRemain > 0) duration += monthsRemain + '个月';
+            if (!duration) duration = '不足1个月';
+
+            return {remaining, targetDateDisplay: dateDisplay, targetDuration: duration};
+        } else {
+            return {remaining, targetDateDisplay: '已达成或无法计算', targetDuration: ''};
+        }
     }
 
     const app = createApp({
@@ -1412,7 +1646,8 @@
             const targetForm = ref({
                 annualIncome: '',
                 incomeRemark: '',
-                targetAmount: '',
+                annualExpense: '',   // 每年计划费用
+                targetAmount: 0,     // 目标金额自动计算，不再手工输入
                 targetDate: '',
                 targetRemark: '',
                 currentBalance: 0,
@@ -1421,8 +1656,39 @@
                 targetDuration: ''
             });
             const targetCalculated = ref(false);
+            // 旧版目标数据检测（有目标金额但缺每年计划费用，提示用户补充）
+            const legacyTargetDetected = ref(false);
 
             // 计算
+            /**
+             * 计算距离目标日期的剩余月数（超过 15 天算一个月）
+             */
+            const computedMonths = computed(() => {
+                return calcMonths(targetForm.value.targetDate);
+            });
+
+            /**
+             * 目标金额自动计算（每年计划费用 ÷ 12 × 剩余月数）
+             */
+            const computedTargetAmount = computed(() => {
+                return calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
+            });
+
+            /**
+             * 将月数格式化为「X年X个月之后」
+             */
+            const computedDurationFromMonths = computed(() => {
+                return formatDuration(computedMonths.value);
+            });
+
+            /**
+             * 旧版数据折算的每年计划费用参考值（目标金额 × 12 ÷ 剩余月数）
+             */
+            const legacySuggestedExpense = computed(() => {
+                if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
+                return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
+            });
+
             // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
             const displayFields = computed(() => {
                 return configs.value;
@@ -1507,20 +1773,28 @@
 
             /**
              * 记录弹窗中是否显示该银行卡字段
-             * 添加/编辑态：始终显示（编辑态需要所有卡都可输入）
-             * 查看态：只显示该记录中有非零金额的卡，避免大量 0 值占位
+             * 添加模式：只显示未禁用的银行卡
+             * 编辑模式：显示所有未禁用卡，以及该记录中有非零金额的禁用卡（历史数据可继续修改）
+             * 查看模式：只显示该记录中有非零金额的卡，避免大量 0 值占位
              * @param {Object} f - 银行卡配置项
              * @returns {boolean}
              */
             function shouldShowFieldInModal(f) {
-                if (modalMode.value === 'add' || editable.value) {
-                    return true;
+                // 添加模式：只显示未禁用的银行卡
+                if (modalMode.value === 'add') {
+                    return !f.disabled;
                 }
-                // 查看态：检查该记录中该卡是否有非零金额
-                return f.category.some(type => {
+                // 该记录中该卡是否有非零金额
+                const hasNonZero = f.category.some(type => {
                     const val = Number(form.value[f.key + '_' + type]) || 0;
                     return val !== 0;
                 });
+                // 编辑模式：未禁用 或 该记录有非零金额（含已禁用卡的历史数据）
+                if (editable.value) {
+                    return !f.disabled || hasNonZero;
+                }
+                // 查看模式：只显示有非零金额的卡
+                return hasNonZero;
             }
 
             function prevPage() {
@@ -1564,22 +1838,22 @@
                     // 当前总余额：取最新一条记录的余额
                     const latest = sorted[0];
                     const currentBalance = latest ? getBalance(latest) : 0;
-
-                    // 剩余金额与预计达成日期（targetForm 计算过才有值）
-                    const remaining = targetForm.value.remaining || 0;
-                    const targetDateDisplay = targetForm.value.targetDateDisplay || '';
-                    const targetDuration = targetForm.value.targetDuration || '';
+                    // 目标金额实时计算（每年计划费用 ÷ 12 × 剩余月数）
+                    const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
+                    // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
+                    const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
 
                     const targetRows = [
                         ['年收入', targetData.annualIncome || ''],
                         ['年收入说明', targetData.incomeRemark || ''],
-                        ['目标金额', targetData.targetAmount || ''],
+                        ['每年计划费用', targetData.annualExpense || ''],
                         ['目标日期', targetData.targetDate || ''],
+                        ['目标金额', targetAmount],
                         ['目标说明', targetData.targetRemark || ''],
                         ['当前总余额', currentBalance],
-                        ['剩余金额', remaining],
-                        ['预计达成日期', targetDateDisplay],
-                        ['剩余时间', targetDuration]
+                        ['剩余金额', targetCalc.remaining],
+                        ['预计达成日期', targetCalc.targetDateDisplay],
+                        ['剩余时间', targetCalc.targetDuration]
                     ];
 
                     targetRows.forEach(row => {
@@ -2066,6 +2340,8 @@
                     }
                 } catch (_) {
                 }
+                // 检测旧版目标数据（有目标金额但缺每年计划费用，提示用户补充）
+                legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
                 // 最新一条记录（日期最新）的总余额作为当前余额
                 const sorted = sortedRecords.value;
                 const latest = sorted.length ? sorted[0] : null;
@@ -2080,6 +2356,7 @@
                     if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
                 }
                 targetModalVisible.value = false;
+                legacyTargetDetected.value = false;
             }
 
             /**
@@ -2087,38 +2364,19 @@
              */
             function calcTarget() {
                 const annual = Number(targetForm.value.annualIncome) || 0;
-                const target = Number(targetForm.value.targetAmount) || 0;
+                const target = calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
                 const current = Number(targetForm.value.currentBalance) || 0;
                 if (target <= 0 || annual <= 0) {
                     showToast('请先填写有效的年收入和目标金额');
                     return;
                 }
 
-                const remaining = target - current;
-                targetForm.value.remaining = remaining;
-
-                // 按年收入估算预计达成日期
-                const monthlyIncome = annual / 12;
-                if (remaining > 0 && monthlyIncome > 0) {
-                    const monthsNeeded = Math.round(remaining / monthlyIncome);
-                    const now = new Date();
-                    const targetDate = new Date(now);
-                    targetDate.setMonth(now.getMonth() + monthsNeeded);
-                    const targetYear = targetDate.getFullYear();
-                    const targetMonth = targetDate.getMonth() + 1;
-                    targetForm.value.targetDateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
-
-                    const years = Math.floor(monthsNeeded / 12);
-                    const months = monthsNeeded % 12;
-                    let duration = '';
-                    if (years > 0) duration += years + '年';
-                    if (months > 0) duration += months + '个月';
-                    if (!duration) duration = '不足1个月';
-                    targetForm.value.targetDuration = duration;
-                } else {
-                    targetForm.value.targetDateDisplay = '已达成或无法计算';
-                    targetForm.value.targetDuration = '';
-                }
+                targetForm.value.targetAmount = target; // 仅用于计算结果快照展示，不存到存储
+                // 复用公共计算函数（与 CSV 导出逻辑一致）
+                const result = calcTargetStats(annual, target, current);
+                targetForm.value.remaining = result.remaining;
+                targetForm.value.targetDateDisplay = result.targetDateDisplay;
+                targetForm.value.targetDuration = result.targetDuration;
                 targetCalculated.value = true;
             }
 
@@ -2127,14 +2385,10 @@
              */
             function saveTarget() {
                 try {
-                    const data = {
-                        annualIncome: targetForm.value.annualIncome,
-                        incomeRemark: targetForm.value.incomeRemark,
-                        targetAmount: targetForm.value.targetAmount,
-                        targetDate: targetForm.value.targetDate,
-                        targetRemark: targetForm.value.targetRemark
-                    };
+                    // 使用公共函数构建完整数据（自动计算目标金额）
+                    const data = buildTargetData(targetForm.value);
                     localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data));
+
                     showToast('✅ 目标已保存');
                     targetEditable.value = false;
                 } catch (_) {
@@ -2167,6 +2421,7 @@
                 }
                 targetEditable.value = false;
                 targetCalculated.value = false;
+                showToast('已返回详情');
             }
 
             /**
@@ -2223,6 +2478,7 @@
                 getBalance,
                 getDiff,
                 formatNumber,
+                formatDateToDot,
                 shouldShowFieldInModal,
 
                 openAddModal,
@@ -2261,6 +2517,11 @@
                 targetEditable,
                 targetForm,
                 targetCalculated,
+                computedTargetAmount,
+                computedMonths,
+                computedDurationFromMonths,
+                legacyTargetDetected,
+                legacySuggestedExpense,
                 openTargetModal,
                 closeTargetModal,
                 calcTarget,
