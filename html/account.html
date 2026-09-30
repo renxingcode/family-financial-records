@@ -115,35 +115,32 @@
                 <button class="close-btn" @click="confirmClose">✕</button>
             </div>
 
-            <!-- 查看态汇总 -->
-            <template v-if="modalMode === 'edit' && !editable">
-                <div class="summary-box">
-                    <div class="summary-line">
-                        <span class="item">
-                            <span class="label">总余额</span>
-                            <span class="value" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
-                                {{ formatNumber(getBalance(form)) }}
-                            </span>
-                        </span>
-                        <span class="item">
-                            <span class="label">总存款</span>
-                            <span class="value text-blue">{{ formatNumber(getTotalDeposit(form)) }}</span>
-                        </span>
-                        <span class="item">
-                            <span class="label">总负债</span>
-                            <span class="value text-red">{{ formatNumber(getTotalDebt(form)) }}</span>
-                        </span>
-                    </div>
-                </div>
-                <hr class="form-divider">
-            </template>
-
             <!-- 日期 -->
             <div class="form-group form-row">
-                <label>日期</label>
+                <label>【日期】</label>
                 <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
-                <span v-else>{{ form.date }}</span>
+                <span v-else>{{ formatDateToDot(form.date) }}</span>
             </div>
+
+            <!-- 查看态汇总 -->
+            <template v-if="modalMode === 'edit' && !editable">
+                <div class="form-group form-row">
+                    <label>【总余额】</label>
+                    <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                        {{ formatNumber(getBalance(form)) }} 元
+                    </span>
+                    <span class="text-muted fs-12">( {{ formatNumber(getTotalDeposit(form)) }} - {{ formatNumber(getTotalDebt(form)) }} )</span>
+                </div>
+                <div class="form-group form-row">
+                    <label>【汇总】</label>
+                    <div class="field-wrapper">
+                        <span class="sub-input"><span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span></span>
+                        <span class="sub-input"><span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span></span>
+                    </div>
+                </div>
+            </template>
+
+            <hr class="form-divider">
 
             <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
@@ -260,12 +257,15 @@
             <div class="form-group form-row">
                 <label>年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
-                <span v-else class="text-blue">{{ formatNumber(targetForm.annualIncome) || '-' }}</span>
+                <span v-else class="text-blue">
+                    {{ formatNumber(targetForm.annualIncome) || '-' }}
+                    <span v-if="targetForm.annualIncome > 0" class="text-darkred fs-12">(平均每月 {{ formatNumber((targetForm.annualIncome / 12).toFixed(0)) }} 元)</span>
+                </span>
             </div>
 
             <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="3" placeholder="补充年收入说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="补充年收入说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
@@ -273,7 +273,10 @@
             <div class="form-group form-row">
                 <label>每年计划费用: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
-                <span v-else class="text-blue">{{ formatNumber(targetForm.annualExpense) || '-' }}</span>
+                <span v-else class="text-blue">
+                    {{ formatNumber(targetForm.annualExpense) || '-' }}
+                    <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
+                </span>
             </div>
             <!-- 旧版目标数据兼容提示 -->
             <div v-if="legacyTargetDetected" class="legacy-tip">
@@ -322,7 +325,7 @@
 
             <!-- 目标说明（编辑：无标题文本域；查看：虚线框） -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="3" placeholder="补充目标说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.targetRemark" rows="5" placeholder="补充目标说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.targetRemark || '暂无说明' }}</div>
             </div>
 

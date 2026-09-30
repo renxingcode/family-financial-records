@@ -268,6 +268,18 @@ body {
     color: #aaa;
 }
 
+.fs-12 {
+    font-size: 12px;
+}
+
+.text-darkred {
+    color: darkred;
+}
+
+.text-darkgreen {
+    color: darkgreen;
+}
+
 .empty-cell {
     color: #ccc;
 }
@@ -562,37 +574,6 @@ body {
     font-size: 11px;
     color: #999;
     margin-right: 5px;
-}
-
-/* 查看态汇总卡片 */
-.summary-box {
-    background: #f7f8fa;
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 4px;
-}
-
-.summary-line {
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-    font-size: 14px;
-}
-
-.summary-line .item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.summary-line .item .label {
-    color: #888;
-    font-size: 13px;
-}
-
-.summary-line .item .value {
-    font-weight: 600;
-    font-size: 15px;
 }
 
 /* 备注展开收起 */
