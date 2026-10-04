@@ -182,7 +182,7 @@ const app = createApp({
         const bankManagerVisible = ref(false);
         const bankFormVisible = ref(false);
         const bankFormMode = ref('add');  // 'add' | 'edit'
-        const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
+        const bankForm = ref({key: '', label: '', category: ['deposit', 'debt'], showInList: true});
         const editingCardKey = ref('');
         const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
 
@@ -235,9 +235,9 @@ const app = createApp({
             return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
         });
 
-        // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
+        // displayFields: 列表中实际显示的银行卡列（禁用或隐藏的不显示）
         const displayFields = computed(() => {
-            return configs.value;
+            return configs.value.filter(f => !f.disabled && f.showInList !== false);
         });
         const allConfigs = computed(() => configs.value);
         const editableFields = computed(() => {
@@ -779,13 +779,13 @@ const app = createApp({
         }
 
         // 银行卡管理
-        function openBankManager() {
+        function openBankCardManager() {
             bankManagerVisible.value = true;
         }
 
         function openAddBankCard() {
             bankFormMode.value = 'add';
-            bankForm.value = {key: '', label: '', category: ['deposit', 'debt']};
+            bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true};
             editingCardKey.value = '';
             bankFormModified.value = false;
             bankFormVisible.value = true;
@@ -823,6 +823,7 @@ const app = createApp({
                     label: label,
                     category: [...bankForm.value.category],
                     disabled: false,
+                    showInList: bankForm.value.showInList !== false,
                 });
                 showToast('✅ 银行卡已添加');
             } else {
@@ -833,6 +834,7 @@ const app = createApp({
                 }
                 configs.value[idx].label = label;
                 configs.value[idx].category = [...bankForm.value.category];
+                configs.value[idx].showInList = bankForm.value.showInList !== false;
                 showToast('✅ 银行卡已更新');
             }
             saveConfig(configs.value);
@@ -845,7 +847,7 @@ const app = createApp({
             if (!card) return;
             const newState = !card.disabled;
             const action = newState ? '禁用' : '启用';
-            if (confirm(`确定要${action}「${card.label}」吗？`)) {
+            if (confirm(`确定要${action}「${card.label}」吗？${newState ? '禁用的银行卡在添加记录时不再显示' : ''}`)) {
                 card.disabled = newState;
                 saveConfig(configs.value);
                 showToast(`✅ 已${action}「${card.label}」`);
@@ -1036,7 +1038,7 @@ const app = createApp({
             filterNumber,
             refreshData,
 
-            openBankManager,
+            openBankCardManager,
             openAddBankCard,
             openEditBankCard,
             saveBankCard,

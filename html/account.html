@@ -15,7 +15,6 @@
         <div class="header-actions">
             <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
             <button class="btn-target" @click="openTargetModal">🎯 目标</button>
-            <button class="btn-bank" @click="openBankManager">💳 银行卡</button>
             <button class="btn-add" @click="openAddModal">＋ 添加</button>
         </div>
     </div>
@@ -27,6 +26,7 @@
         <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
         <button class="btn-import" @click="triggerImport('overwrite')">📤 覆盖导入</button>
         <button class="btn-import" @click="triggerImport('merge')">📤 合并导入</button>
+        <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
@@ -405,36 +405,44 @@
 
     <!-- 银行卡管理弹窗 -->
     <div v-if="bankManagerVisible" class="modal-overlay">
-        <div class="modal-box" style="max-width:520px;">
+        <div class="modal-box bank-card-manager-box">
             <div class="modal-title">
-                <span>💳 银行卡管理</span>
-                <div>
-                    <button class="btn-add-card" @click="openAddBankCard">＋ 新增</button>
-                    <button class="close-btn" @click="bankManagerVisible = false">✕</button>
+                <div class="div1">
+                    <span>💳 银行卡管理</span>
+                    <button class="btn-add-card-inline" @click="openAddBankCard">＋ 新增</button>
                 </div>
+                <button class="close-btn" @click="bankManagerVisible = false">✕</button>
             </div>
-
-            <div v-if="allConfigs.length === 0" class="empty-cell" style="text-align:center;padding:20px 0;color:#999;">
-                暂无银行卡，请添加
+            <div class="modal-desc">
+                图例说明：
+                <span>✅ 在列表中显示</span>
+                <span>❌ 不在列表中显示</span>
+                <span>🚫 已禁用</span>
             </div>
-            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item"
-                 :class="{ 'bank-card-disabled': f.disabled }">
-                <div>
+            <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
+            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+                <div class="bank-card-info">
+                    <span v-if="f.disabled" class="disabled-icon">🚫</span>
+                    <span v-else class="list-status-icon" :class="f.showInList !== false ? 'list-on' : 'list-off'">
+                        {{ f.showInList !== false ? '✅' : '❌' }}
+                    </span>
                     <span class="bank-card-label">{{ f.label }}</span>
                     <span class="bank-card-types">
-                        ({{ f.category.includes('deposit') ? '存款' : ''
-                        }}{{ f.category.includes('debt') && f.category.includes('deposit') ? '、' : ''
-                        }}{{ f.category.includes('debt') ? '负债' : '' }})
+                        <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
+                        <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
                     </span>
                 </div>
                 <div class="bank-card-actions">
-                    <button @click="openEditBankCard(f)">编辑</button>
-                    <button v-if="!f.disabled" class="btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
-                    <button v-else class="btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
+                    <template v-if="!f.disabled">
+                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
+                        <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
+                    </template>
+                    <template v-else>
+                        <button class="btn-toggle-disable btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
+                    </template>
                 </div>
             </div>
-
-            <div class="form-actions" style="margin-top:12px;">
+            <div class="form-actions config-actions">
                 <button class="btn-cancel" @click="bankManagerVisible = false">关闭</button>
             </div>
         </div>
@@ -442,27 +450,39 @@
 
     <!-- 新增/编辑银行卡弹窗 -->
     <div v-if="bankFormVisible" class="modal-overlay">
-        <div class="modal-box" style="max-width:400px;">
+        <div class="modal-box bank-card-form-box">
             <div class="modal-title">
-                <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
+                <span>{{ bankFormMode === 'add' ? '➕ 新增银行卡' : '✏️ 编辑银行卡' }}</span>
                 <button class="close-btn" @click="closeBankCardForm">✕</button>
             </div>
 
+            <!-- 显示名称 -->
             <div class="form-group form-row">
-                <label>显示名称</label>
-                <input v-model="bankForm.label" placeholder="如：招商银行" style="flex:1;"/>
+                <label>显示名称: </label>
+                <input v-model="bankForm.label" type="text" placeholder="如：招商银行" class="form-input-flex" />
             </div>
 
-            <div class="form-group">
-                <label>类型</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" v-model="bankForm.category" value="deposit"> 存款</label>
-                    <label><input type="checkbox" v-model="bankForm.category" value="debt"> 负债</label>
+            <!-- 类型 -->
+            <div class="form-group form-row">
+                <label>类型: </label>
+                <div class="category-checkbox-group">
+                    <label><input type="checkbox" v-model="bankForm.category" value="deposit" /> 存款</label>
+                    <label><input type="checkbox" v-model="bankForm.category" value="debt" /> 负债</label>
+                    <span class="type-hint">（至少选一项）</span>
+                </div>
+            </div>
+
+            <!-- 列表显示 -->
+            <div class="form-group form-row">
+                <label>列表显示: </label>
+                <div class="list-display-options">
+                    <label class="list-display-option"><input type="radio" v-model="bankForm.showInList" :value="true" /> 显示 <span class="list-status-icon list-on">✅</span></label>
+                    <label class="list-display-option"><input type="radio" v-model="bankForm.showInList" :value="false" /> 不显示 <span class="list-status-icon list-off">❌</span></label>
                 </div>
             </div>
 
             <div class="form-actions">
-                <button class="btn-cancel" @click="closeBankCardForm">取消</button>
+                <button class="btn-cancel" @click="closeBankCardForm">关闭</button>
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
             </div>
         </div>
