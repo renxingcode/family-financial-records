@@ -41,6 +41,72 @@ function generateKey() {
     return 'card_' + Date.now();
 }
 
+/**
+ * 软删除银行卡（标记 isDeleted，历史数据保留）
+ * @param {Array} configs 银行卡配置数组
+ * @param {string} key 银行卡 key
+ * @returns {boolean} 是否删除成功
+ */
+function softDeleteBankCard(configs, key) {
+    const card = configs.find(c => c.key === key);
+    if (!card) return false;
+    card.isDeleted = true;
+    saveConfig(configs);
+    return true;
+}
+
+/**
+ * 恢复银行卡：软删除标记还原，历史数据自动恢复显示
+ * @param {Array} configs 银行卡配置数组
+ * @param {string} key 银行卡 key
+ * @returns {Object|null} 恢复后的银行卡配置；不存在时返回 null
+ */
+function restoreBankCard(configs, key) {
+    const card = configs.find(c => c.key === key);
+    if (!card) return null;
+    card.isDeleted = false;
+    card.showInList = true; // 恢复后默认重新显示在列表中
+    saveConfig(configs);
+    return card;
+}
+
+/**
+ * 彻底删除银行卡：从配置中移除，并清除所有历史记录中该卡字段。不可恢复。
+ * @param {Array} configs 银行卡配置数组
+ * @param {Array} records 账户记录数组
+ * @param {string} key 银行卡 key
+ * @returns {Object|null} {label, removedCount}；不存在时返回 null
+ */
+function permanentDeleteBankCard(configs, records, key) {
+    const card = configs.find(c => c.key === key);
+    if (!card) return null;
+    const label = card.label;
+
+    const idx = configs.findIndex(c => c.key === key);
+    if (idx !== -1) configs.splice(idx, 1);
+    saveConfig(configs);
+
+    const depositField = key + '_deposit';
+    const debtField = key + '_debt';
+    let removedCount = 0;
+    (records || []).forEach(rec => {
+        let changed = false;
+        if (Object.prototype.hasOwnProperty.call(rec, depositField)) {
+            delete rec[depositField];
+            changed = true;
+        }
+        if (Object.prototype.hasOwnProperty.call(rec, debtField)) {
+            delete rec[debtField];
+            changed = true;
+        }
+        if (changed) removedCount++;
+    });
+    if (removedCount > 0) {
+        localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+    }
+    return {label: label, removedCount: removedCount};
+}
+
 // 目标相关公共函数
 /**
  * 计算从今天到目标日期的剩余月数（四舍五入到月）
@@ -186,6 +252,11 @@ const app = createApp({
         const editingCardKey = ref('');
         const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
 
+        // 回收站
+        const recycleBinVisible = ref(false);
+        const recycleConfirmVisible = ref(false); // 彻底删除红色警示确认弹窗
+        const recycleTargetCard = ref(null);      // 待彻底删除的银行卡
+
         // 目标
         const targetModalVisible = ref(false);
         const targetEditable = ref(false);
@@ -235,9 +306,9 @@ const app = createApp({
             return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
         });
 
-        // displayFields: 列表中实际显示的银行卡列（禁用或隐藏的不显示）
+        // displayFields: 列表中实际显示的银行卡列（禁用、隐藏或已删除的不显示）
         const displayFields = computed(() => {
-            return configs.value.filter(f => !f.disabled && f.showInList !== false);
+            return configs.value.filter(f => !f.disabled && !f.isDeleted && f.showInList !== false);
         });
         const allConfigs = computed(() => configs.value);
         const editableFields = computed(() => {
@@ -326,9 +397,9 @@ const app = createApp({
          * @returns {boolean}
          */
         function shouldShowFieldInModal(f) {
-            // 添加模式：只显示未禁用的银行卡
+            // 添加模式：只显示未禁用、未删除的银行卡
             if (modalMode.value === 'add') {
-                return !f.disabled;
+                return !f.disabled && !f.isDeleted;
             }
             // 该记录中该卡是否有非零金额
             const hasNonZero = f.category.some(type => {
@@ -705,9 +776,18 @@ const app = createApp({
 
             const clean = {date: f.date, remark: f.remark || ''};
             Object.keys(f).forEach(k => {
-                if (k !== 'date' && k !== 'remark') {
-                    clean[k] = Number(f[k]) || 0;
+                if (k === 'date' || k === 'remark') return;
+                // add 模式（含复制）：跳过已禁用、已删除银行卡的字段，避免带入的历史残留写入新记录
+                if (modalMode.value === 'add') {
+                    let cardKey = null;
+                    if (k.endsWith('_deposit')) cardKey = k.slice(0, -8);
+                    else if (k.endsWith('_debt')) cardKey = k.slice(0, -5);
+                    if (cardKey) {
+                        const card = configs.value.find(c => c.key === cardKey);
+                        if (!card || card.disabled || card.isDeleted) return;
+                    }
                 }
+                clean[k] = Number(f[k]) || 0;
             });
 
             if (modalMode.value === 'add') {
@@ -793,7 +873,7 @@ const app = createApp({
 
         function openEditBankCard(card) {
             bankFormMode.value = 'edit';
-            bankForm.value = {...card};
+            bankForm.value = {...card, showInList: card.showInList !== false};
             editingCardKey.value = card.key;
             bankFormModified.value = false;
             bankFormVisible.value = true;
@@ -842,6 +922,22 @@ const app = createApp({
             bankFormVisible.value = false;
         }
 
+        // 删除银行卡（软删除：标记 isDeleted，历史数据保留，可到回收站恢复）
+        function deleteBankCard() {
+            const cardKey = editingCardKey.value;
+            const card = configs.value.find(f => f.key === cardKey);
+            if (!card) {
+                showToast('❌ 银行卡不存在');
+                return;
+            }
+            if (!confirm(`确定要删除银行卡「${card.label}」吗？\n历史数据保留，可到回收站恢复。`)) {
+                return;
+            }
+            softDeleteBankCard(configs.value, cardKey);
+            bankFormVisible.value = false;
+            showToast(`✅ 已删除银行卡「${card.label}」`);
+        }
+
         function toggleBankCardDisabled(key) {
             const card = configs.value.find(f => f.key === key);
             if (!card) return;
@@ -852,6 +948,60 @@ const app = createApp({
                 saveConfig(configs.value);
                 showToast(`✅ 已${action}「${card.label}」`);
             }
+        }
+
+        // 回收站列表：已软删除的银行卡
+        const deletedCards = computed(() => configs.value.filter(c => c.isDeleted));
+
+        function openRecycleBin() {
+            recycleBinVisible.value = true;
+        }
+
+        function closeRecycleBin() {
+            recycleBinVisible.value = false;
+        }
+
+        // 恢复银行卡：软删除标记还原，历史记录中的对应数据自动恢复显示
+        function restoreCard(card) {
+            const restored = restoreBankCard(configs.value, card.key);
+            if (!restored) {
+                showToast('❌ 银行卡不存在');
+                return;
+            }
+            showToast(`✅ 已恢复银行卡「${restored.label}」，历史数据同步恢复`);
+        }
+
+        // 请求彻底删除：打开红色警示确认弹窗（入口按钮默认注释，逻辑保留）
+        function requestPermanentDelete(card) {
+            recycleTargetCard.value = card;
+            recycleConfirmVisible.value = true;
+        }
+
+        function cancelPermanentDelete() {
+            recycleConfirmVisible.value = false;
+            recycleTargetCard.value = null;
+        }
+
+        // 确认彻底删除：输入指定文字后执行，不可恢复
+        function confirmPermanentDelete() {
+            const card = recycleTargetCard.value;
+            if (!card) return;
+            const userInput = prompt('请键入「确定彻底删除银行卡」以确认彻底删除：');
+            if (userInput !== '确定彻底删除银行卡') {
+                showToast('❌ 输入错误，取消删除');
+                recycleConfirmVisible.value = false;
+                recycleTargetCard.value = null;
+                return;
+            }
+            recycleConfirmVisible.value = false;
+            recycleTargetCard.value = null;
+
+            const result = permanentDeleteBankCard(configs.value, records.value, card.key);
+            if (!result) {
+                showToast('❌ 银行卡不存在');
+                return;
+            }
+            showToast(`✅ 已彻底删除「${result.label}」，其历史数据共 ${result.removedCount} 条已清除`);
         }
 
         // 关闭银行卡表单弹窗，有未保存修改时先确认
@@ -1043,6 +1193,17 @@ const app = createApp({
             openEditBankCard,
             saveBankCard,
             toggleBankCardDisabled,
+            deleteBankCard,
+            deletedCards,
+            openRecycleBin,
+            closeRecycleBin,
+            restoreCard,
+            requestPermanentDelete,
+            cancelPermanentDelete,
+            confirmPermanentDelete,
+            recycleBinVisible,
+            recycleConfirmVisible,
+            recycleTargetCard,
 
             // 分页
             currentPage,

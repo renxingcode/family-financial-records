@@ -987,6 +987,104 @@ body {
     margin: 0;
 }
 
+/* 银行卡表单删除按钮 */
+.form-actions-sub {
+    margin-top: 8px;
+}
+
+.btn-delete {
+    background: #e74c3c;
+    color: #fff;
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-delete:active {
+    background: #c0392b;
+}
+
+/* 银行卡回收站 */
+.btn-recycle-bin {
+    padding: 2px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    background: #95a5a6;
+    color: #fff;
+    cursor: pointer;
+}
+
+.btn-recycle-bin:active {
+    background: #7f8c8d;
+}
+
+.recycle-bin-box {
+    max-width: 440px;
+}
+
+.btn-permanent-delete {
+    padding: 3px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #e74c3c;
+    color: #fff;
+}
+
+.btn-permanent-delete:active {
+    background: #c0392b;
+}
+
+.recycle-confirm-box {
+    max-width: 420px;
+}
+
+.permanent-delete-warning {
+    background: #fff0f0;
+    border: 2px solid #e74c3c;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 12px 0 4px;
+    color: #c0392b;
+}
+
+.permanent-delete-warning .warning-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e74c3c;
+    margin-bottom: 8px;
+}
+
+.permanent-delete-warning p {
+    margin: 6px 0;
+}
+
+.permanent-delete-warning ul {
+    margin: 6px 0;
+    padding-left: 20px;
+}
+
+.btn-permanent-delete-confirm {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    background: #e74c3c;
+    color: #fff;
+    cursor: pointer;
+}
+
+.btn-permanent-delete-confirm:active {
+    background: #c0392b;
+}
+
+
 /* 复选框 */
 .checkbox-group {
     display: flex;

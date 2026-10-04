@@ -410,6 +410,7 @@
                 <div class="div1">
                     <span>💳 银行卡管理</span>
                     <button class="btn-add-card-inline" @click="openAddBankCard">＋ 新增</button>
+                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">🗑️ 回收站 ({{ deletedCards.length }})</button>
                 </div>
                 <button class="close-btn" @click="bankManagerVisible = false">✕</button>
             </div>
@@ -420,7 +421,7 @@
                 <span>🚫 已禁用</span>
             </div>
             <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
-            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+            <div v-for="f in allConfigs.filter(c => !c.isDeleted)" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
                 <div class="bank-card-info">
                     <span v-if="f.disabled" class="disabled-icon">🚫</span>
                     <span v-else class="list-status-icon" :class="f.showInList !== false ? 'list-on' : 'list-off'">
@@ -438,6 +439,7 @@
                         <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
                     </template>
                     <template v-else>
+                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
                         <button class="btn-toggle-disable btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
                     </template>
                 </div>
@@ -484,6 +486,62 @@
             <div class="form-actions">
                 <button class="btn-cancel" @click="closeBankCardForm">关闭</button>
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
+            </div>
+            <div class="form-actions form-actions-sub" v-if="bankFormMode === 'edit'">
+                <button class="btn-delete" style="flex:1" @click="deleteBankCard">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 银行卡回收站 -->
+    <div v-if="recycleBinVisible" class="modal-overlay">
+        <div class="modal-box recycle-bin-box">
+            <div class="modal-title">
+                <span>🗑️ 银行卡回收站</span>
+                <button class="close-btn" @click="closeRecycleBin">✕</button>
+            </div>
+            <div class="modal-desc">
+                已删除的银行卡及其历史记录数据可在此恢复；彻底删除会同时清除历史记录中的对应数据。
+            </div>
+            <div v-if="deletedCards.length === 0" class="bank-card-empty">回收站为空</div>
+            <div v-for="f in deletedCards" :key="f.key" class="bank-card-item">
+                <div class="bank-card-info">
+                    <span class="disabled-icon">🗑️</span>
+                    <span class="bank-card-label">{{ f.label }}</span>
+                    <span class="bank-card-types">
+                        <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
+                        <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
+                    </span>
+                </div>
+                <div class="bank-card-actions">
+                    <button class="btn-enable" @click="restoreCard(f)">↩️ 恢复</button>
+                    <!-- 彻底删除：功能已完整实现，为确保数据安全，入口暂时注释，如有需要请自行取消注释后即可使用 -->
+                    <!-- <button class="btn-permanent-delete" @click="requestPermanentDelete(f)">彻底删除</button> -->
+                </div>
+            </div>
+            <div class="form-actions config-actions"><button class="btn-cancel" @click="closeRecycleBin">关闭</button></div>
+        </div>
+    </div>
+
+    <!-- 彻底删除确认弹窗 -->
+    <div v-if="recycleConfirmVisible" class="modal-overlay">
+        <div class="modal-box recycle-confirm-box">
+            <div class="modal-title">
+                <span>⚠️ 彻底删除银行卡</span>
+                <button class="close-btn" @click="cancelPermanentDelete">✕</button>
+            </div>
+            <div class="permanent-delete-warning">
+                <div class="warning-title">⚠️ 此操作不可恢复！</div>
+                <p>即将彻底删除银行卡「<strong>{{ recycleTargetCard && recycleTargetCard.label }}</strong>」，该操作将：</p>
+                <ul>
+                    <li>从系统中移除该银行卡的配置</li>
+                    <li><strong>永久清除</strong>所有历史记录中该银行卡的存款 / 负债数据</li>
+                    <li>删除后无法还原（建议操作前先导出 JSON 备份）</li>
+                </ul>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelPermanentDelete">取消</button>
+                <button class="btn-permanent-delete-confirm" @click="confirmPermanentDelete">确认彻底删除</button>
             </div>
         </div>
     </div>
