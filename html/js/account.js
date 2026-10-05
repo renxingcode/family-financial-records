@@ -341,21 +341,23 @@ const app = createApp({
             return Number(item[fieldName]) || 0;
         }
 
+        // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
         function getTotalDeposit(item) {
             let sum = 0;
-            configs.value.forEach(f => {
-                if (f.category.includes('deposit')) {
-                    sum += Number(item[f.key + '_deposit']) || 0;
+            Object.keys(item).forEach(key => {
+                if (key.endsWith('_deposit')) {
+                    sum += Number(item[key]) || 0;
                 }
             });
             return sum;
         }
 
+        // 总负债：所有 *_debt 字段之和（含已删除银行卡的历史数据）
         function getTotalDebt(item) {
             let sum = 0;
-            configs.value.forEach(f => {
-                if (f.category.includes('debt')) {
-                    sum += Number(item[f.key + '_debt']) || 0;
+            Object.keys(item).forEach(key => {
+                if (key.endsWith('_debt')) {
+                    sum += Number(item[key]) || 0;
                 }
             });
             return sum;
@@ -363,6 +365,53 @@ const app = createApp({
 
         function getBalance(item) {
             return getTotalDeposit(item) - getTotalDebt(item);
+        }
+
+        // 活动银行卡 key（未删除的卡，含禁用）
+        function getActiveCardKeys() {
+            return configs.value.filter(c => !c.isDeleted).map(c => c.key);
+        }
+
+        // 检查记录中是否存在已删除银行卡的数据（决定是否显示汇总行）
+        function hasDeletedFields(item) {
+            const activeKeys = getActiveCardKeys();
+            return Object.keys(item).some(key => {
+                if (key.endsWith('_deposit') || key.endsWith('_debt')) {
+                    const prefix = key.endsWith('_deposit') ? key.slice(0, -8) : key.slice(0, -5);
+                    return activeKeys.indexOf(prefix) === -1 && Number(item[key]) !== 0;
+                }
+                return false;
+            });
+        }
+
+        // 已删除银行卡的存款合计
+        function getDeletedDepositTotal(item) {
+            const activeKeys = getActiveCardKeys();
+            let sum = 0;
+            Object.keys(item).forEach(key => {
+                if (key.endsWith('_deposit')) {
+                    const prefix = key.slice(0, -8);
+                    if (activeKeys.indexOf(prefix) === -1) {
+                        sum += Number(item[key]) || 0;
+                    }
+                }
+            });
+            return sum;
+        }
+
+        // 已删除银行卡的负债合计
+        function getDeletedDebtTotal(item) {
+            const activeKeys = getActiveCardKeys();
+            let sum = 0;
+            Object.keys(item).forEach(key => {
+                if (key.endsWith('_debt')) {
+                    const prefix = key.slice(0, -5);
+                    if (activeKeys.indexOf(prefix) === -1) {
+                        sum += Number(item[key]) || 0;
+                    }
+                }
+            });
+            return sum;
         }
 
         /**
@@ -397,9 +446,13 @@ const app = createApp({
          * @returns {boolean}
          */
         function shouldShowFieldInModal(f) {
-            // 添加模式：只显示未禁用、未删除的银行卡
+            // 已删除的银行卡不单独显示，数据归入「已删除汇总」
+            if (f.isDeleted) {
+                return false;
+            }
+            // 添加模式：只显示未禁用的银行卡
             if (modalMode.value === 'add') {
-                return !f.disabled && !f.isDeleted;
+                return !f.disabled;
             }
             // 该记录中该卡是否有非零金额
             const hasNonZero = f.category.some(type => {
@@ -489,10 +542,12 @@ const app = createApp({
 
             // 2. 构建表头
             const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
-            configs.value.forEach(f => {
+            configs.value.filter(f => !f.isDeleted).forEach(f => {
                 if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
                 if (f.category.includes('debt')) headers.push(`${f.label}负债`);
             });
+            headers.push('已删除汇总存款');
+            headers.push('已删除汇总负债');
             headers.push('备注');
 
             // 3. 构建数据行
@@ -507,10 +562,12 @@ const app = createApp({
                     getTotalDeposit(item),
                     getTotalDebt(item),
                 ];
-                configs.value.forEach(f => {
+                configs.value.filter(f => !f.isDeleted).forEach(f => {
                     if (f.category.includes('deposit')) row.push(Number(item[f.key + '_deposit']) || 0);
                     if (f.category.includes('debt')) row.push(Number(item[f.key + '_debt']) || 0);
                 });
+                row.push(getDeletedDepositTotal(item));
+                row.push(getDeletedDebtTotal(item));
                 row.push(item.remark || '');
                 return row;
             });
@@ -1174,6 +1231,9 @@ const app = createApp({
             getTotalDeposit,
             getTotalDebt,
             getBalance,
+            getDeletedDepositTotal,
+            getDeletedDebtTotal,
+            hasDeletedFields,
             getDiff,
             formatNumber,
             formatDateToDot,

@@ -204,6 +204,23 @@
                 </div>
             </template>
 
+            <!-- 已删除银行卡汇总 -->
+            <template v-if="modalMode === 'edit' && hasDeletedFields(form)">
+                <div class="form-group form-row">
+                    <label class="label-deleted">已删除汇总: </label>
+                    <div class="field-wrapper">
+                        <span class="sub-input">
+                            <span class="label-small">存款</span>
+                            <span class="text-blue">{{ formatNumber(getDeletedDepositTotal(form)) }} 元</span>
+                        </span>
+                        <span class="sub-input">
+                            <span class="label-small">负债</span>
+                            <span class="text-red">{{ formatNumber(getDeletedDebtTotal(form)) }} 元</span>
+                        </span>
+                    </div>
+                </div>
+            </template>
+
             <!-- 备注（编辑态展开收起 / 只读态滚动显示） -->
             <div class="form-group">
                 <div class="remark-header">
