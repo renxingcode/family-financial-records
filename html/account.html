@@ -200,6 +200,7 @@
                                 </span>
                             </template>
                         </template>
+                        <div v-if="f.remark" class="record-card-remark">备注: {{ f.remark }}</div>
                     </div>
                 </div>
             </template>
@@ -217,6 +218,7 @@
                             <span class="label-small">负债</span>
                             <span class="text-red">{{ formatNumber(getDeletedDebtTotal(form)) }} 元</span>
                         </span>
+                        <div class="record-card-remark">备注: 已删除银行卡的历史金额汇总</div>
                     </div>
                 </div>
             </template>
@@ -449,6 +451,7 @@
                         <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
                         <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
                     </span>
+                    <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
                     <template v-if="!f.disabled">
@@ -500,6 +503,12 @@
                 </div>
             </div>
 
+            <!-- 备注 -->
+            <div class="form-group form-row">
+                <label>备注: </label>
+                <input v-model="bankForm.remark" type="text" placeholder="可选备注" class="form-input-flex" />
+            </div>
+
             <div class="form-actions">
                 <button class="btn-cancel" @click="closeBankCardForm">关闭</button>
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
@@ -529,6 +538,7 @@
                         <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
                         <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
                     </span>
+                    <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
                     <button class="btn-enable" @click="restoreCard(f)">↩️ 恢复</button>

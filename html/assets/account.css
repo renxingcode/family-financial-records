@@ -935,12 +935,12 @@ body {
 
 .type-hint {
     font-size: 12px;
-    color: #888;
+    color: red;
 }
 
 .category-checkbox-group {
     display: flex;
-    gap: 12px;
+    gap: 6px;
     align-items: center;
     flex: 1;
     flex-wrap: wrap;
@@ -990,6 +990,32 @@ body {
 /* 已删除银行卡汇总标签 */
 .form-group .label-deleted {
     color: red;
+}
+
+/* 银行卡管理列表中的备注 */
+.bank-card-remark {
+    font-size: 11px;
+    color: #a47e3c;
+    white-space: normal;
+    word-break: break-all;
+    overflow: hidden;
+    flex: 0 0 100%;
+    margin-top: -2px;
+    margin-bottom: 2px;
+    line-height: 1.4;
+}
+
+/* 记录弹窗中的银行卡备注 */
+.record-card-remark {
+    font-size: 11px;
+    color: #c09853;
+    white-space: normal;
+    word-break: break-all;
+    overflow: hidden;
+    flex: 0 0 100%;
+    margin-top: -6px;
+    margin-bottom: 2px;
+    line-height: 1.4;
 }
 
 /* 银行卡表单删除按钮 */

@@ -922,7 +922,7 @@ const app = createApp({
 
         function openAddBankCard() {
             bankFormMode.value = 'add';
-            bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true};
+            bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true, remark: ''};
             editingCardKey.value = '';
             bankFormModified.value = false;
             bankFormVisible.value = true;
@@ -930,7 +930,7 @@ const app = createApp({
 
         function openEditBankCard(card) {
             bankFormMode.value = 'edit';
-            bankForm.value = {...card, showInList: card.showInList !== false};
+            bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || ''};
             editingCardKey.value = card.key;
             bankFormModified.value = false;
             bankFormVisible.value = true;
@@ -961,6 +961,7 @@ const app = createApp({
                     category: [...bankForm.value.category],
                     disabled: false,
                     showInList: bankForm.value.showInList !== false,
+                    remark: bankForm.value.remark || '',
                 });
                 showToast('✅ 银行卡已添加');
             } else {
@@ -972,6 +973,7 @@ const app = createApp({
                 configs.value[idx].label = label;
                 configs.value[idx].category = [...bankForm.value.category];
                 configs.value[idx].showInList = bankForm.value.showInList !== false;
+                configs.value[idx].remark = bankForm.value.remark || '';
                 showToast('✅ 银行卡已更新');
             }
             saveConfig(configs.value);
