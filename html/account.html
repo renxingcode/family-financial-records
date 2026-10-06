@@ -272,9 +272,9 @@
                 <button class="close-btn" @click="closeTargetModal">✕</button>
             </div>
 
-            <!-- 年收入 -->
+            <!-- 每年收入 -->
             <div class="form-group form-row">
-                <label>年收入: </label>
+                <label>每年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
                     {{ formatNumber(targetForm.annualIncome) || '-' }}
@@ -282,33 +282,40 @@
                 </span>
             </div>
 
-            <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
+            <!-- 每年收入说明 -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="补充年收入说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="每年收入的补充说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
-            <!-- 每年计划费用 -->
+            <!-- 每年支出 -->
             <div class="form-group form-row">
-                <label>每年计划费用: </label>
+                <label>每年支出: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
                     {{ formatNumber(targetForm.annualExpense) || '-' }}
                     <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
+
+            <!-- 每年支出说明 -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.expenseRemark" rows="5" placeholder="每年支出的补充说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.expenseRemark || '暂无说明' }}</div>
+            </div>
+
             <!-- 旧版目标数据兼容提示 -->
             <div v-if="legacyTargetDetected" class="legacy-tip">
                 <template v-if="targetEditable">
                     <template v-if="computedMonths > 0">
-                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年计划费用约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
+                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年支出约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
                     </template>
                     <template v-else>
-                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年计划费用。
+                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年支出。
                     </template>
                 </template>
                 <template v-else>
-                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年计划费用」自动计算目标金额，请点击「编辑」补充每年计划费用。
+                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年支出」自动计算目标金额，请点击「编辑」补充每年支出。
                 </template>
             </div>
 
@@ -316,7 +323,7 @@
             <div class="form-group form-row">
                 <label>目标日期: </label>
                 <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
-                <span v-else>{{ targetForm.targetDate || '-' }}</span>
+                <span v-else>{{ formatDateToDot(targetForm.targetDate) }}</span>
                 <!-- 查看态且日期有效时，显示剩余时间 -->
                 <span v-if="!targetEditable && targetForm.targetDate && computedMonths > 0" style="font-size:12px;color:#888;margin-left:1px;flex-shrink:0;">
                     （{{ computedDurationFromMonths }}）
@@ -330,7 +337,7 @@
                     <!-- 有数据时显示金额 -->
                     <template v-if="computedTargetAmount > 0">
                         <div class="text-purple text-bold">{{ formatNumber(computedTargetAmount) }} 元</div>
-                        <!-- 每年计划费用存在时才显示公式（旧版数据缺该字段则不显示） -->
+                        <!-- 每年支出存在时才显示公式（旧版数据缺该字段则不显示） -->
                         <div v-if="targetForm.annualExpense" style="font-size:12px;color:#888;margin-top:2px;">
                             ({{ formatNumber(targetForm.annualExpense) }} ÷ 12 × {{ computedMonths }} 个月)
                         </div>
@@ -377,11 +384,11 @@
                         <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
                     </span>
                 </div>
-                <!-- 剩余时间（按年收入估算的达成所需时长） -->
+                <!-- 剩余时间（按每年收入估算的达成所需时长） -->
                 <div class="stat-formula-row-none-border">还剩 {{ targetForm.targetDuration }}</div>
                 <!-- 公式行（靠右） -->
                 <div class="stat-formula-row">
-                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }})
+                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 每年收入 {{ formatNumber(targetForm.annualIncome) }})
                 </div>
             </div>
 
@@ -406,6 +413,23 @@
                 <div class="stat-formula-row">
                     (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 剩余总月份 {{ computedMonths }} 个月)
                 </div>
+            </div>
+
+            <!-- 底部提醒卡片 -->
+            <div v-if="!targetEditable && targetCalculated" class="target-bottom-reminder">
+                <div class="reminder-title">
+                    💡 躺平逻辑提醒
+                    <span @click="targetReminderExpanded = !targetReminderExpanded" class="target-reminder-expanded">
+                        {{ targetReminderExpanded ? '[收起]' : '[展开查看]' }}
+                    </span>
+                </div>
+                <ul class="reminder-list" v-show="targetReminderExpanded">
+                    <li>要想提前躺平，就要<strong>提高存款</strong>。存款越多，目标剩余越少，达成时间越短。可以试试编辑每年收入和支出情况对比看看。</li>
+                    <li>要么<strong>提高存款</strong>，要么<strong>延长奋斗年限</strong>。收入不变时，只有存款能帮你"买时间"。</li>
+                    <li>目标剩余金额 = 目标金额 - 当前存款。存款每多一分，剩余金额就少一分。</li>
+                    <li>如果存款为 <strong>0</strong>，最低留存 = 每年支出，只能从头攒起。</li>
+                    <li>两种选择：<strong>换工作降薪</strong> → 拉长时间；<strong>想提前躺平</strong> → 增加存款。鱼和熊掌不可兼得，但存款可以同时缩短时间、降低对收入的要求。</li>
+                </ul>
             </div>
 
             <!-- 底部按钮 -->

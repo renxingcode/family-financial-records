@@ -125,8 +125,8 @@ function calcMonths(targetDateStr) {
 }
 
 /**
- * 计算目标金额：每年计划费用 ÷ 12 × 剩余月数
- * @param {number|string} annualExpense - 每年计划费用
+ * 计算目标金额：每年支出 ÷ 12 × 剩余月数
+ * @param {number|string} annualExpense - 每年支出
  * @param {string} targetDateStr - 目标日期字符串
  * @returns {number} 目标金额，四舍五入到整数
  */
@@ -144,9 +144,10 @@ function calcTargetAmount(annualExpense, targetDateStr) {
  */
 function buildTargetData(form) {
     return {
-        annualIncome: form.annualIncome || '',   // 年收入，用户填写
-        incomeRemark: form.incomeRemark || '',   // 年收入补充说明，用户填写
-        annualExpense: form.annualExpense || '', // 每年计划费用，用户填写
+        annualIncome: form.annualIncome || '',   // 每年收入，用户填写
+        incomeRemark: form.incomeRemark || '',   // 每年收入补充说明，用户填写
+        annualExpense: form.annualExpense || '', // 每年支出，用户填写
+        expenseRemark: form.expenseRemark || '', // 每年支出说明，用户填写
         targetDate: form.targetDate || '',       // 目标日期，用户填写
         targetRemark: form.targetRemark || ''    // 目标说明，用户填写
     };
@@ -260,10 +261,12 @@ const app = createApp({
         // 目标
         const targetModalVisible = ref(false);
         const targetEditable = ref(false);
+        const targetReminderExpanded = ref(false);
         const targetForm = ref({
             annualIncome: '',
             incomeRemark: '',
-            annualExpense: '',   // 每年计划费用
+            annualExpense: '',   // 每年支出
+            expenseRemark: '',   // 每年支出说明
             targetAmount: 0,     // 目标金额自动计算，不再手工输入
             targetDate: '',
             targetRemark: '',
@@ -273,7 +276,7 @@ const app = createApp({
             targetDuration: ''
         });
         const targetCalculated = ref(false);
-        // 旧版目标数据检测（有目标金额但缺每年计划费用，提示用户补充）
+        // 旧版目标数据检测（有目标金额但缺每年支出，提示用户补充）
         const legacyTargetDetected = ref(false);
 
         // 计算
@@ -285,7 +288,7 @@ const app = createApp({
         });
 
         /**
-         * 目标金额自动计算（每年计划费用 ÷ 12 × 剩余月数）
+         * 目标金额自动计算（每年支出 ÷ 12 × 剩余月数）
          */
         const computedTargetAmount = computed(() => {
             return calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
@@ -299,7 +302,7 @@ const app = createApp({
         });
 
         /**
-         * 旧版数据折算的每年计划费用参考值（目标金额 × 12 ÷ 剩余月数）
+         * 旧版数据折算的每年支出参考值（目标金额 × 12 ÷ 剩余月数）
          */
         const legacySuggestedExpense = computed(() => {
             if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
@@ -508,15 +511,16 @@ const app = createApp({
                 // 当前总余额：取最新一条记录的余额
                 const latest = sorted[0];
                 const currentBalance = latest ? getBalance(latest) : 0;
-                // 目标金额实时计算（每年计划费用 ÷ 12 × 剩余月数）
+                // 目标金额实时计算（每年支出 ÷ 12 × 剩余月数）
                 const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
                 // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
                 const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
 
                 const targetRows = [
-                    ['年收入', targetData.annualIncome || ''],
-                    ['年收入说明', targetData.incomeRemark || ''],
-                    ['每年计划费用', targetData.annualExpense || ''],
+                    ['每年收入', targetData.annualIncome || ''],
+                    ['每年收入说明', targetData.incomeRemark || ''],
+                    ['每年支出', targetData.annualExpense || ''],
+                    ['每年支出说明', targetData.expenseRemark || ''],
                     ['目标日期', targetData.targetDate || ''],
                     ['目标金额', targetAmount],
                     ['目标说明', targetData.targetRemark || ''],
@@ -1097,7 +1101,7 @@ const app = createApp({
                 }
             } catch (_) {
             }
-            // 检测旧版目标数据（有目标金额但缺每年计划费用，提示用户补充）
+            // 检测旧版目标数据（有目标金额但缺每年支出，提示用户补充）
             legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
             // 最新一条记录（日期最新）的总余额作为当前余额
             const sorted = sortedRecords.value;
@@ -1124,7 +1128,7 @@ const app = createApp({
             const target = calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
             const current = Number(targetForm.value.currentBalance) || 0;
             if (target <= 0 || annual <= 0) {
-                showToast('请先填写有效的年收入和目标金额');
+                showToast('请先填写有效的每年收入和目标金额');
                 return;
             }
 
@@ -1286,6 +1290,7 @@ const app = createApp({
             // 目标
             targetModalVisible,
             targetEditable,
+            targetReminderExpanded,
             targetForm,
             targetCalculated,
             computedTargetAmount,
