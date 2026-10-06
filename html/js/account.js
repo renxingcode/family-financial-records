@@ -338,10 +338,16 @@ const app = createApp({
         });
 
         // 核心函数
+        // 列表单元格取值：
+        // - 字段非零 → 显示数值（历史数据，与当前 category 无关）
+        // - 字段为 0 且 category 含该类型 → 显示 0（配置了类型，真实为 0）
+        // - 字段为 0 且 category 不含该类型 → 返回 null 显示 "-"（取消类型后新增的数据）
         function getFieldValue(item, f, type) {
             const fieldName = f.key + '_' + type;
-            if (item[fieldName] === undefined || item[fieldName] === null) return null;
-            return Number(item[fieldName]) || 0;
+            const val = Number(item[fieldName]) || 0;
+            if (val !== 0) return val;
+            if (!f.category.includes(type)) return null;
+            return 0;
         }
 
         // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
@@ -457,7 +463,7 @@ const app = createApp({
             if (modalMode.value === 'add') {
                 return !f.disabled;
             }
-            // 该记录中该卡是否有非零金额
+            // 该记录中该卡是否有非零金额（按 category 检查，避免 undefined 字段误判）
             const hasNonZero = f.category.some(type => {
                 const val = Number(form.value[f.key + '_' + type]) || 0;
                 return val !== 0;
@@ -468,6 +474,16 @@ const app = createApp({
             }
             // 查看模式：只显示有非零金额的卡
             return hasNonZero;
+        }
+
+        // 弹窗中某卡某类型是否显示：
+        // - 当前配置含该类型 → 显示
+        // - add 模式（含复制）：严格按当前配置，不带出已取消类型的历史数据
+        // - edit/view 模式：有非零历史数据也显示（历史数据可继续查看/修改）
+        function shouldShowTypeField(f, type) {
+            if (f.category.includes(type)) return true;
+            if (modalMode.value === 'add') return false;
+            return (Number(form.value[f.key + '_' + type]) || 0) !== 0;
         }
 
         function prevPage() {
@@ -838,14 +854,20 @@ const app = createApp({
             const clean = {date: f.date, remark: f.remark || ''};
             Object.keys(f).forEach(k => {
                 if (k === 'date' || k === 'remark') return;
-                // add 模式（含复制）：跳过已禁用、已删除银行卡的字段，避免带入的历史残留写入新记录
+                // add 模式：跳过当前配置不含该类型的字段（复制带入的已取消类型数据不写入）
                 if (modalMode.value === 'add') {
-                    let cardKey = null;
-                    if (k.endsWith('_deposit')) cardKey = k.slice(0, -8);
-                    else if (k.endsWith('_debt')) cardKey = k.slice(0, -5);
+                    let cardKey = null, type = null;
+                    if (k.endsWith('_deposit')) {
+                        cardKey = k.slice(0, -8);
+                        type = 'deposit';
+                    } else if (k.endsWith('_debt')) {
+                        cardKey = k.slice(0, -5);
+                        type = 'debt';
+                    }
                     if (cardKey) {
                         const card = configs.value.find(c => c.key === cardKey);
-                        if (!card || card.disabled || card.isDeleted) return;
+                        // 复制带入的历史字段：仅当银行卡未禁用、未删除且当前配置含该类型时才写入
+                        if (!card || card.disabled || card.isDeleted || !card.category.includes(type)) return;
                     }
                 }
                 clean[k] = Number(f[k]) || 0;
@@ -934,7 +956,7 @@ const app = createApp({
 
         function openEditBankCard(card) {
             bankFormMode.value = 'edit';
-            bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || ''};
+            bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || '', originalCategory: [...card.category]};
             editingCardKey.value = card.key;
             bankFormModified.value = false;
             bankFormVisible.value = true;
@@ -956,6 +978,18 @@ const app = createApp({
             if (exist && (bankFormMode.value === 'add' || (bankFormMode.value === 'edit' && exist.key !== editingCardKey.value))) {
                 showToast('名称已存在');
                 return;
+            }
+
+            // 编辑模式下取消了部分类型，需确认（历史数据不丢失，仍计入总存款/总负债）
+            if (bankFormMode.value === 'edit' && bankForm.value.originalCategory) {
+                const removedTypes = bankForm.value.originalCategory.filter(t => !bankForm.value.category.includes(t));
+                if (removedTypes.length > 0) {
+                    const typeMap = {deposit: '存款', debt: '负债'};
+                    const removedNames = removedTypes.map(t => typeMap[t] || t).join('、');
+                    if (!confirm(`您取消了"${removedNames}"类型，历史数据不会丢失，仍然会计入总存款/总负债；但后续新增记录将无法填写该类型。\n确定继续保存吗？`)) {
+                        return;
+                    }
+                }
             }
 
             if (bankFormMode.value === 'add') {
@@ -1244,6 +1278,7 @@ const app = createApp({
             formatNumber,
             formatDateToDot,
             shouldShowFieldInModal,
+            shouldShowTypeField,
 
             openAddModal,
             openEditModal,

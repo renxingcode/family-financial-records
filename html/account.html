@@ -147,31 +147,8 @@
                 <div class="form-group form-row" v-if="shouldShowFieldInModal(f)">
                     <label>{{ f.label }}</label>
                     <div class="field-wrapper">
-                        <!-- 存款 + 负债 -->
-                        <template v-if="f.category.includes('deposit') && f.category.includes('debt')">
-                            <template v-if="editable">
-                                <input class="sub-input input-deposit" type="text"
-                                       :value="form[f.key + '_deposit']"
-                                       @input="filterNumber(f.key + '_deposit', $event)"
-                                       placeholder="存款"/>
-                                <input class="sub-input input-debt" type="text"
-                                       :value="form[f.key + '_debt']"
-                                       @input="filterNumber(f.key + '_debt', $event)"
-                                       placeholder="负债"/>
-                            </template>
-                            <template v-else>
-                                <span class="sub-input">
-                                    <span class="label-small">存款</span>
-                                    <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
-                                </span>
-                                <span class="sub-input">
-                                    <span class="label-small">负债</span>
-                                    <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
-                                </span>
-                            </template>
-                        </template>
-                        <!-- 仅存款 -->
-                        <template v-else-if="f.category.includes('deposit')">
+                        <!-- 存款：add 模式严格按配置；edit/view 模式含非零历史数据 -->
+                        <template v-if="shouldShowTypeField(f, 'deposit')">
                             <template v-if="editable">
                                 <input class="sub-input input-deposit" style="flex:1;" type="text"
                                        :value="form[f.key + '_deposit']"
@@ -185,8 +162,8 @@
                                 </span>
                             </template>
                         </template>
-                        <!-- 仅负债 -->
-                        <template v-else>
+                        <!-- 负债：add 模式严格按配置；edit/view 模式含非零历史数据 -->
+                        <template v-if="shouldShowTypeField(f, 'debt')">
                             <template v-if="editable">
                                 <input class="sub-input input-debt" style="flex:1;" type="text"
                                        :value="form[f.key + '_debt']"
