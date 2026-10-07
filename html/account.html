@@ -24,8 +24,7 @@
         <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
         <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
         <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
-        <button class="btn-import" @click="triggerImport('overwrite')">📤 覆盖导入</button>
-        <button class="btn-import" @click="triggerImport('merge')">📤 合并导入</button>
+        <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
         <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
@@ -570,6 +569,32 @@
             <div class="form-actions">
                 <button class="btn-cancel" @click="cancelPermanentDelete">取消</button>
                 <button class="btn-permanent-delete-confirm" @click="confirmPermanentDelete">确认彻底删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入方式选择弹窗 -->
+    <div v-if="importModalVisible" class="modal-overlay">
+        <div class="modal-box import-modal-box">
+            <div class="modal-title">
+                <span>📤 导入数据</span>
+                <button class="close-btn" @click="cancelImport">✕</button>
+            </div>
+            <div class="import-modal-desc">
+                文件包含 <strong>{{ importStats.records }}</strong> 条记录<template v-if="importStats.configs">、<strong>{{ importStats.configs }}</strong> 个银行卡配置</template><template v-if="importStats.hasTarget">、目标计划</template>。请选择导入方式：
+            </div>
+            <div class="import-options">
+                <button class="import-option" @click="doImport('merge')">
+                    <div class="import-option-title">🔀 合并导入</div>
+                    <div class="import-option-desc">按日期去重，已有日期的记录将被覆盖更新</div>
+                </button>
+                <button class="import-option import-option-danger" @click="doImport('overwrite')">
+                    <div class="import-option-title">🔄 覆盖导入</div>
+                    <div class="import-option-desc">清空当前数据，完全替换为文件内容</div>
+                </button>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelImport">取消</button>
             </div>
         </div>
     </div>

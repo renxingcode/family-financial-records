@@ -658,11 +658,14 @@ const app = createApp({
             showToast('✅ 导出成功');
         }
 
-        // 导入模式：overwrite=覆盖导入 / merge=合并导入
-        let importMode = 'overwrite';
+        // 导入方式选择弹窗状态
+        // 文件解析成功后先暂存数据，弹出「合并 / 覆盖」选择弹窗，用户确认后才真正写入。
+        // 相比原生 confirm 的「确定=合并/取消=覆盖」，按钮语义更直白，避免误操作。
+        const importModalVisible = ref(false);
+        const importData = ref(null);   // 暂存解析后的导入数据
+        const importStats = ref({});    // 文件统计信息，用于弹窗展示
 
-        function triggerImport(mode) {
-            importMode = mode;
+        function triggerImport() {
             document.getElementById('fileInput').click();
         }
 
@@ -670,59 +673,85 @@ const app = createApp({
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = async (e) => {
+            reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
                     if (!data.records || !Array.isArray(data.records)) {
                         showToast('❌ 无效的数据格式');
                         return;
                     }
-                    if (importMode === 'overwrite') {
-                        if (confirm(`将覆盖导入 ${data.records.length} 条记录，当前数据将被替换。确认？`)) {
-                            // 覆盖配置
-                            if (data.config && Array.isArray(data.config)) {
-                                configs.value = data.config;
-                                saveConfig(configs.value);
-                            }
-                            // 覆盖记录
-                            records.value = data.records;
-                            saveData();
-                            // 覆盖目标
-                            if (data.target) {
-                                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
-                            } else {
-                                localStorage.removeItem(STORAGE_KEYS.TARGET);
-                            }
-                            showToast(`✅ 成功覆盖导入 ${data.records.length} 条记录`);
-                            currentPage.value = 1;
-                        }
-                    } else if (importMode === 'merge') {
-                        // 合并导入：跳过已有日期的记录
-                        let addedCount = 0;
-                        let skippedCount = 0;
-                        const existingDates = new Set(records.value.map(r => r.date));
-                        data.records.forEach(rec => {
-                            if (!existingDates.has(rec.date)) {
-                                records.value.push(rec);
-                                addedCount++;
-                            } else {
-                                skippedCount++;
-                            }
-                        });
-                        saveData();
-                        // 合并目标：有则直接覆盖
-                        if (data.target) {
-                            localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
-                        }
-                        showToast(`✅ 合并导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条（日期重复）`);
-                        currentPage.value = 1;
-                    }
+                    // 解析成功：暂存数据，弹出「合并 / 覆盖」选择弹窗
+                    importData.value = data;
+                    importStats.value = {
+                        records: data.records.length,
+                        configs: data.config && Array.isArray(data.config) ? data.config.length : 0,
+                        hasTarget: !!data.target,
+                    };
+                    importModalVisible.value = true;
                 } catch (err) {
                     showToast('❌ JSON 解析失败');
                 }
             };
             reader.readAsText(file);
+            // 清空 input，允许重复选择同一文件
             event.target.value = '';
+        }
+
+        function cancelImport() {
+            importModalVisible.value = false;
+            importData.value = null;
+        }
+
+        function doImport(mode) {
+            const data = importData.value;
+            if (!data) return;
+            importModalVisible.value = false;
+            importData.value = null;
+
+            if (mode === 'merge') {
+                // 合并导入：按日期去重，已有日期的记录覆盖更新
+                let addedCount = 0;
+                let updatedCount = 0;
+                data.records.forEach(rec => {
+                    const idx = records.value.findIndex(r => r.date === rec.date);
+                    if (idx !== -1) {
+                        records.value[idx] = rec;
+                        updatedCount++;
+                    } else {
+                        records.value.push(rec);
+                        addedCount++;
+                    }
+                });
+                saveData();
+                // 合并银行卡配置：直接覆盖
+                if (data.config && Array.isArray(data.config)) {
+                    configs.value = data.config;
+                    saveConfig(configs.value);
+                }
+                // 合并目标：有则直接覆盖
+                if (data.target) {
+                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                }
+                showToast(`✅ 合并导入完成：新增 ${addedCount} 条，更新 ${updatedCount} 条`);
+            } else {
+                // 覆盖导入：清空当前数据，完全替换为文件内容
+                if (data.config && Array.isArray(data.config)) {
+                    configs.value = data.config;
+                    saveConfig(configs.value);
+                } else {
+                    configs.value = [];
+                    saveConfig([]);
+                }
+                records.value = data.records.slice();
+                saveData();
+                if (data.target) {
+                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                } else {
+                    localStorage.removeItem(STORAGE_KEYS.TARGET);
+                }
+                showToast(`✅ 覆盖导入完成：已导入 ${records.value.length} 条记录`);
+            }
+            currentPage.value = 1;
         }
 
         // Toast
@@ -1318,6 +1347,10 @@ const app = createApp({
             exportJSON,
             triggerImport,
             importJSON,
+            importModalVisible,
+            importStats,
+            cancelImport,
+            doImport,
 
             // 全屏
             toggleFullscreen,
