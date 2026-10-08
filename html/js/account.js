@@ -241,6 +241,7 @@ const app = createApp({
         const modalVisible = ref(false);
         const modalMode = ref('add');   // 'add' | 'edit'
         const editable = ref(false);    // 编辑态（true）还是查看态（false）
+        const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
         const editIndex = ref(-1);
         const form = ref({});
         const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
@@ -658,6 +659,27 @@ const app = createApp({
             showToast('✅ 导出成功');
         }
 
+        // 导出方式选择弹窗状态
+        // 操作栏「导出」按钮弹出选择，明确导出 JSON 还是 CSV，避免两个按钮挤在操作栏
+        const exportModalVisible = ref(false);
+
+        function openExportModal() {
+            exportModalVisible.value = true;
+        }
+
+        function cancelExport() {
+            exportModalVisible.value = false;
+        }
+
+        function doExport(type) {
+            exportModalVisible.value = false;
+            if (type === 'json') {
+                exportJSON();
+            } else {
+                exportCSV();
+            }
+        }
+
         // 导入方式选择弹窗状态
         // 文件解析成功后先暂存数据，弹出「合并 / 覆盖」选择弹窗，用户确认后才真正写入。
         // 相比原生 confirm 的「确定=合并/取消=覆盖」，按钮语义更直白，避免误操作。
@@ -827,6 +849,7 @@ const app = createApp({
             modalMode.value = 'add';
             editable.value = true;
             editIndex.value = -1;
+            isCopy.value = false;
             form.value = getDefaultForm();
             showRemark.value = false;
             modalVisible.value = true;
@@ -839,6 +862,7 @@ const app = createApp({
             modalMode.value = 'edit';
             editable.value = false; // 默认查看态
             editIndex.value = realIdx;
+            isCopy.value = false;
             form.value = {...records.value[realIdx]};
             showRemark.value = !!form.value.remark; // 有备注默认展开
             modalVisible.value = true;
@@ -920,6 +944,7 @@ const app = createApp({
             setTimeout(() => {
                 modalMode.value = 'add';
                 editIndex.value = -1;
+                isCopy.value = true;
                 const today = new Date();
                 const y = today.getFullYear();
                 const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -1069,7 +1094,13 @@ const app = createApp({
             if (!card) return;
             const newState = !card.disabled;
             const action = newState ? '禁用' : '启用';
-            if (confirm(`确定要${action}「${card.label}」吗？${newState ? '禁用的银行卡在添加记录时不再显示' : ''}`)) {
+            let msg = `确定要${action}「${card.label}」吗？`;
+            if (newState) {
+                msg += '\n\n🚫 禁用后：\n• 添加记录时不再显示该银行卡\n• 列表中将隐藏该银行卡列\n• 历史记录仍可查看和编辑（不会丢失数据）';
+            } else {
+                msg += '\n\n✅ 启用后：\n• 添加记录时可重新使用该银行卡\n• 列表中将重新显示该银行卡列';
+            }
+            if (confirm(msg)) {
                 card.disabled = newState;
                 saveConfig(configs.value);
                 showToast(`✅ 已${action}「${card.label}」`);
@@ -1282,6 +1313,7 @@ const app = createApp({
             modalVisible,
             modalMode,
             editable,
+            isCopy,
             form,
             showRemark,
             displayFields,
@@ -1345,6 +1377,10 @@ const app = createApp({
             // 导出和导入
             exportCSV,
             exportJSON,
+            exportModalVisible,
+            openExportModal,
+            cancelExport,
+            doExport,
             triggerImport,
             importJSON,
             importModalVisible,

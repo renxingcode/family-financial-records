@@ -22,9 +22,8 @@
     <!-- 操作栏 -->
     <div class="action-bar">
         <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
-        <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
-        <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
-        <button class="btn-import" @click="triggerImport">📤 导入JSON</button>
+        <button class="btn-export" @click="openExportModal">📤 导出</button>
+        <button class="btn-import" @click="triggerImport">📥 导入</button>
         <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
@@ -110,8 +109,20 @@
     <div v-if="modalVisible" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">
-                <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
+                <span>
+                    <template v-if="modalMode === 'add'">
+                        {{ isCopy ? '📄 复制记录' : '➕ 添加记录' }}
+                    </template>
+                    <template v-else>
+                        {{ editable ? '✏️ 编辑记录' : '📋 查看记录' }}
+                    </template>
+                </span>
                 <button class="close-btn" @click="confirmClose">✕</button>
+            </div>
+
+            <!-- 复制记录时的提示 -->
+            <div v-if="isCopy" class="copy-tip">
+                💡 复制记录会自动带入上一条数据的金额，但字段显示以当前银行卡配置为准（已禁用的类型不会显示）。请核对金额是否正确。
             </div>
 
             <!-- 日期 -->
@@ -569,6 +580,30 @@
             <div class="form-actions">
                 <button class="btn-cancel" @click="cancelPermanentDelete">取消</button>
                 <button class="btn-permanent-delete-confirm" @click="confirmPermanentDelete">确认彻底删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出方式选择弹窗 -->
+    <div v-if="exportModalVisible" class="modal-overlay">
+        <div class="modal-box import-modal-box">
+            <div class="modal-title">
+                <span>📤 导出数据</span>
+                <button class="close-btn" @click="cancelExport">✕</button>
+            </div>
+            <div class="import-modal-desc">请选择导出格式：</div>
+            <div class="import-options">
+                <button class="import-option import-option-json" @click="doExport('json')">
+                    <div class="import-option-title">📥 导出JSON</div>
+                    <div class="import-option-desc">导出 JSON 数据文件，包含记录、银行卡配置、目标计划，可用于备份或再次导入</div>
+                </button>
+                <button class="import-option import-option-csv" @click="doExport('csv')">
+                    <div class="import-option-title">📊 导出CSV表格</div>
+                    <div class="import-option-desc">导出 CSV 表格，便于用 Excel / WPS 打开查看分析</div>
+                </button>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelExport">取消</button>
             </div>
         </div>
     </div>
