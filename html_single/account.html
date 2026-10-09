@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>家庭账户管理V0.5</title>
+    <title>家庭账户管理V0.6</title>
     <style>
         /* 全局重置 */
         * {
@@ -120,21 +120,30 @@
         }
 
         .action-bar .btn-export {
-            background: #27ae60;
+            background: #db5e8c;
             color: #fff;
         }
 
         .action-bar .btn-export:active {
-            background: #1e8449;
+            background: #ba5077;
         }
 
         .action-bar .btn-import {
-            background: #f39c12;
+            background: #2c7a3a;
             color: #fff;
         }
 
         .action-bar .btn-import:active {
-            background: #d68910;
+            background: #256831;
+        }
+
+        .action-bar .btn-custom {
+            background: #2c3e50;
+            color: #fff;
+        }
+
+        .action-bar .btn-custom:active {
+            background: #1a252f;
         }
 
         .action-bar .btn-refresh {
@@ -413,7 +422,6 @@
         }
 
         .form-group label {
-            display: block;
             font-size: 13px;
             font-weight: 500;
             color: #555;
@@ -615,6 +623,47 @@
             word-break: break-all;
         }
 
+        /* 目标弹窗 - 底部提醒卡片 */
+        .target-bottom-reminder {
+            margin: 16px 0 12px;
+            padding: 14px 16px;
+            background: #f8faff;
+            border-radius: 8px;
+            border-left: 4px solid #a8c8e8;
+            font-size: 13px;
+            color: #444;
+            line-height: 1.7;
+        }
+
+        .reminder-title {
+            font-weight: 600;
+            color: #3a7eb0;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .target-reminder-expanded {
+            float: right;
+            font-size: 12px;
+            color: #3a7eb0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .reminder-list {
+            margin: 0;
+            padding-left: 18px;
+            list-style-type: disc;
+        }
+
+        .reminder-list li {
+            margin-bottom: 2px;
+        }
+
+        .reminder-list strong {
+            color: #2c7a3a;
+        }
+
         /* 目标弹窗 - 说明虚线框 */
         .remark-box {
             border: 1px dashed #ccc;
@@ -779,6 +828,9 @@
         }
 
         .bank-card-types {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
             font-size: 12px;
             color: #888;
         }
@@ -820,6 +872,409 @@
         .bank-card-actions .btn-enable:active {
             background: #1e8449;
         }
+
+        /* 银行卡管理面板 */
+        .bank-card-manager-box .modal-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bank-card-manager-box .modal-title .div1 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .modal-box .modal-desc {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .btn-add-card-inline {
+            padding: 2px 10px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            background: #3498db;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-add-card-inline:active {
+            background: #1a6fa0;
+        }
+
+        .bank-card-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .disabled-icon {
+            font-size: 14px;
+            line-height: 1;
+            color: #999;
+        }
+
+        .list-status-icon {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .list-status-icon.list-on {
+            color: #27ae60;
+        }
+
+        .list-status-icon.list-off {
+            color: #e74c3c;
+        }
+
+        /* 银行卡列表是否显示的单选：与上面一行的「类型」行的 checkbox 组同布局对齐 */
+        .list-display-options {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .list-display-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 400;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .list-display-option input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin: 0;
+        }
+
+        .type-badge {
+            font-size: 10px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background: #e8ecf1;
+            color: #555;
+        }
+
+        .type-deposit {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .type-debt {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn-edit-small {
+            padding: 3px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #e8ecf1;
+            color: #333;
+        }
+
+        .btn-edit-small:active {
+            background: #d0d5dd;
+        }
+
+        .btn-toggle-disable {
+            padding: 3px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .bank-card-empty {
+            text-align: center;
+            padding: 20px 0;
+            color: #999;
+        }
+
+        .type-hint {
+            font-size: 12px;
+            color: red;
+        }
+
+        .category-checkbox-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .category-checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 400;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .category-checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .list-display-options {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .list-display-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            font-weight: 400;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .list-display-option input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            margin: 0;
+        }
+
+        /* 已删除银行卡汇总标签 */
+        .form-group .label-deleted {
+            color: red;
+        }
+
+        /* 银行卡管理列表中的备注 */
+        .bank-card-remark {
+            font-size: 11px;
+            color: #a47e3c;
+            white-space: normal;
+            word-break: break-all;
+            overflow: hidden;
+            flex: 0 0 100%;
+            margin-top: -2px;
+            margin-bottom: 2px;
+            line-height: 1.4;
+        }
+
+        /* 记录弹窗中的银行卡备注 */
+        .record-card-remark {
+            font-size: 11px;
+            color: #c09853;
+            white-space: normal;
+            word-break: break-all;
+            overflow: hidden;
+            flex: 0 0 100%;
+            margin-top: -6px;
+            margin-bottom: 2px;
+            line-height: 1.4;
+        }
+
+        /* 银行卡表单删除按钮 */
+        .form-actions-sub {
+            margin-top: 8px;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: #fff;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-delete:active {
+            background: #c0392b;
+        }
+
+        /* 复制记录时的提示条 */
+        .copy-tip {
+            background: #fff8e1;
+            border-left: 4px solid #ff9800;
+            padding: 6px 12px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #e65100;
+            line-height: 1.6;
+        }
+
+        /* 导入方式选择弹窗 */
+        .modal-box.import-modal-box {
+            max-width: 420px;
+        }
+
+        .import-modal-desc {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+
+        .import-modal-desc strong {
+            color: #e67e22;
+        }
+
+        .import-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .import-option {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #d0d7e0;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .import-option:active {
+            background: #f0f2f5;
+            border-color: #b8c0ca;
+        }
+
+        .import-option .import-option-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a2a3a;
+        }
+
+        .import-option .import-option-desc {
+            font-size: 12px;
+            color: #888;
+            line-height: 1.5;
+        }
+
+        .import-option-danger {
+            border-color: #f5c6c6;
+            background: #fff8f8;
+        }
+
+        .import-option-danger .import-option-title {
+            color: #e74c3c;
+        }
+
+        /* 导出选项 */
+        .import-option-json .import-option-title {
+            color: #27ae60;
+        }
+
+        .import-option-csv .import-option-title {
+            color: #2980b9;
+        }
+
+        /* 银行卡回收站 */
+        .btn-recycle-bin {
+            padding: 2px 10px;
+            font-size: 13px;
+            border: none;
+            border-radius: 4px;
+            background: #95a5a6;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-recycle-bin:active {
+            background: #7f8c8d;
+        }
+
+        .recycle-bin-box {
+            max-width: 440px;
+        }
+
+        .btn-permanent-delete {
+            padding: 3px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .btn-permanent-delete:active {
+            background: #c0392b;
+        }
+
+        .recycle-confirm-box {
+            max-width: 420px;
+        }
+
+        .permanent-delete-warning {
+            background: #fff0f0;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 12px 0 4px;
+            color: #c0392b;
+        }
+
+        .permanent-delete-warning .warning-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e74c3c;
+            margin-bottom: 8px;
+        }
+
+        .permanent-delete-warning p {
+            margin: 6px 0;
+        }
+
+        .permanent-delete-warning ul {
+            margin: 6px 0;
+            padding-left: 20px;
+        }
+
+        .btn-permanent-delete-confirm {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            background: #e74c3c;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .btn-permanent-delete-confirm:active {
+            background: #c0392b;
+        }
+
 
         /* 复选框 */
         .checkbox-group {
@@ -989,11 +1444,10 @@
 
     <!-- 头部 -->
     <div class="app-header">
-        <h1>📊 家庭账户V0.5</h1>
+        <h1>📊 家庭账户V0.6</h1>
         <div class="header-actions">
             <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
             <button class="btn-target" @click="openTargetModal">🎯 目标</button>
-            <button class="btn-bank" @click="openBankManager">💳 银行卡</button>
             <button class="btn-add" @click="openAddModal">＋ 添加</button>
         </div>
     </div>
@@ -1001,10 +1455,9 @@
     <!-- 操作栏 -->
     <div class="action-bar">
         <button class="btn-refresh" @click="refreshData">🔄 刷新</button>
-        <button class="btn-export" @click="exportJSON">📥 导出JSON</button>
-        <button class="btn-export" @click="exportCSV">📊 导出CSV</button>
-        <button class="btn-import" @click="triggerImport('overwrite')">📤 覆盖导入</button>
-        <button class="btn-import" @click="triggerImport('merge')">📤 合并导入</button>
+        <button class="btn-export" @click="openExportModal">📤 导出</button>
+        <button class="btn-import" @click="triggerImport">📥 导入</button>
+        <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
         <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
@@ -1089,8 +1542,20 @@
     <div v-if="modalVisible" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-title">
-                <span>{{ modalMode === 'add' ? '➕ 添加记录' : '📋 查看记录' }}</span>
+                <span>
+                    <template v-if="modalMode === 'add'">
+                        {{ isCopy ? '📄 复制记录' : '➕ 添加记录' }}
+                    </template>
+                    <template v-else>
+                        {{ editable ? '✏️ 编辑记录' : '📋 查看记录' }}
+                    </template>
+                </span>
                 <button class="close-btn" @click="confirmClose">✕</button>
+            </div>
+
+            <!-- 复制记录时的提示 -->
+            <div v-if="isCopy" class="copy-tip">
+                💡 复制记录会自动带入上一条数据的金额，但字段显示以当前银行卡配置为准（已禁用的类型不会显示）。请核对金额是否正确。
             </div>
 
             <!-- 日期 -->
@@ -1125,31 +1590,8 @@
                 <div class="form-group form-row" v-if="shouldShowFieldInModal(f)">
                     <label>{{ f.label }}</label>
                     <div class="field-wrapper">
-                        <!-- 存款 + 负债 -->
-                        <template v-if="f.category.includes('deposit') && f.category.includes('debt')">
-                            <template v-if="editable">
-                                <input class="sub-input input-deposit" type="text"
-                                       :value="form[f.key + '_deposit']"
-                                       @input="filterNumber(f.key + '_deposit', $event)"
-                                       placeholder="存款"/>
-                                <input class="sub-input input-debt" type="text"
-                                       :value="form[f.key + '_debt']"
-                                       @input="filterNumber(f.key + '_debt', $event)"
-                                       placeholder="负债"/>
-                            </template>
-                            <template v-else>
-                                <span class="sub-input">
-                                    <span class="label-small">存款</span>
-                                    <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
-                                </span>
-                                <span class="sub-input">
-                                    <span class="label-small">负债</span>
-                                    <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
-                                </span>
-                            </template>
-                        </template>
-                        <!-- 仅存款 -->
-                        <template v-else-if="f.category.includes('deposit')">
+                        <!-- 存款：add 模式严格按配置；edit/view 模式含非零历史数据 -->
+                        <template v-if="shouldShowTypeField(f, 'deposit')">
                             <template v-if="editable">
                                 <input class="sub-input input-deposit" style="flex:1;" type="text"
                                        :value="form[f.key + '_deposit']"
@@ -1163,8 +1605,8 @@
                                 </span>
                             </template>
                         </template>
-                        <!-- 仅负债 -->
-                        <template v-else>
+                        <!-- 负债：add 模式严格按配置；edit/view 模式含非零历史数据 -->
+                        <template v-if="shouldShowTypeField(f, 'debt')">
                             <template v-if="editable">
                                 <input class="sub-input input-debt" style="flex:1;" type="text"
                                        :value="form[f.key + '_debt']"
@@ -1178,6 +1620,25 @@
                                 </span>
                             </template>
                         </template>
+                        <div v-if="f.remark" class="record-card-remark">备注: {{ f.remark }}</div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- 已删除银行卡汇总 -->
+            <template v-if="modalMode === 'edit' && hasDeletedFields(form)">
+                <div class="form-group form-row">
+                    <label class="label-deleted">已删除汇总: </label>
+                    <div class="field-wrapper">
+                        <span class="sub-input">
+                            <span class="label-small">存款</span>
+                            <span class="text-blue">{{ formatNumber(getDeletedDepositTotal(form)) }} 元</span>
+                        </span>
+                        <span class="sub-input">
+                            <span class="label-small">负债</span>
+                            <span class="text-red">{{ formatNumber(getDeletedDebtTotal(form)) }} 元</span>
+                        </span>
+                        <div class="record-card-remark">备注: 已删除银行卡的历史金额汇总</div>
                     </div>
                 </div>
             </template>
@@ -1231,9 +1692,9 @@
                 <button class="close-btn" @click="closeTargetModal">✕</button>
             </div>
 
-            <!-- 年收入 -->
+            <!-- 每年收入 -->
             <div class="form-group form-row">
-                <label>年收入: </label>
+                <label>每年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
                     {{ formatNumber(targetForm.annualIncome) || '-' }}
@@ -1241,33 +1702,40 @@
                 </span>
             </div>
 
-            <!-- 年收入说明（编辑：无标题文本域；查看：虚线框） -->
+            <!-- 每年收入说明 -->
             <div class="form-group">
-                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="补充年收入说明..."></textarea>
+                <textarea v-if="targetEditable" v-model="targetForm.incomeRemark" rows="5" placeholder="每年收入的补充说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.incomeRemark || '暂无说明' }}</div>
             </div>
 
-            <!-- 每年计划费用 -->
+            <!-- 每年支出 -->
             <div class="form-group form-row">
-                <label>每年计划费用: </label>
+                <label>每年支出: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
                     {{ formatNumber(targetForm.annualExpense) || '-' }}
                     <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
+
+            <!-- 每年支出说明 -->
+            <div class="form-group">
+                <textarea v-if="targetEditable" v-model="targetForm.expenseRemark" rows="5" placeholder="每年支出的补充说明..."></textarea>
+                <div v-else class="remark-box">{{ targetForm.expenseRemark || '暂无说明' }}</div>
+            </div>
+
             <!-- 旧版目标数据兼容提示 -->
             <div v-if="legacyTargetDetected" class="legacy-tip">
                 <template v-if="targetEditable">
                     <template v-if="computedMonths > 0">
-                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年计划费用约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
+                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年支出约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
                     </template>
                     <template v-else>
-                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年计划费用。
+                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年支出。
                     </template>
                 </template>
                 <template v-else>
-                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年计划费用」自动计算目标金额，请点击「编辑」补充每年计划费用。
+                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年支出」自动计算目标金额，请点击「编辑」补充每年支出。
                 </template>
             </div>
 
@@ -1275,7 +1743,7 @@
             <div class="form-group form-row">
                 <label>目标日期: </label>
                 <input v-if="targetEditable" type="date" v-model="targetForm.targetDate" class="form-input-flex" />
-                <span v-else>{{ targetForm.targetDate || '-' }}</span>
+                <span v-else>{{ formatDateToDot(targetForm.targetDate) }}</span>
                 <!-- 查看态且日期有效时，显示剩余时间 -->
                 <span v-if="!targetEditable && targetForm.targetDate && computedMonths > 0" style="font-size:12px;color:#888;margin-left:1px;flex-shrink:0;">
                     （{{ computedDurationFromMonths }}）
@@ -1289,7 +1757,7 @@
                     <!-- 有数据时显示金额 -->
                     <template v-if="computedTargetAmount > 0">
                         <div class="text-purple text-bold">{{ formatNumber(computedTargetAmount) }} 元</div>
-                        <!-- 每年计划费用存在时才显示公式（旧版数据缺该字段则不显示） -->
+                        <!-- 每年支出存在时才显示公式（旧版数据缺该字段则不显示） -->
                         <div v-if="targetForm.annualExpense" style="font-size:12px;color:#888;margin-top:2px;">
                             ({{ formatNumber(targetForm.annualExpense) }} ÷ 12 × {{ computedMonths }} 个月)
                         </div>
@@ -1336,11 +1804,11 @@
                         <span class="stat-value orange">{{ targetForm.targetDateDisplay }}</span>
                     </span>
                 </div>
-                <!-- 剩余时间（按年收入估算的达成所需时长） -->
+                <!-- 剩余时间（按每年收入估算的达成所需时长） -->
                 <div class="stat-formula-row-none-border">还剩 {{ targetForm.targetDuration }}</div>
                 <!-- 公式行（靠右） -->
                 <div class="stat-formula-row">
-                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 年收入 {{ formatNumber(targetForm.annualIncome) }})
+                    (目标剩余金额 {{ formatNumber(targetForm.remaining) }} ÷ 每年收入 {{ formatNumber(targetForm.annualIncome) }})
                 </div>
             </div>
 
@@ -1367,6 +1835,23 @@
                 </div>
             </div>
 
+            <!-- 底部提醒卡片 -->
+            <div v-if="!targetEditable && targetCalculated" class="target-bottom-reminder">
+                <div class="reminder-title">
+                    💡 躺平逻辑提醒
+                    <span @click="targetReminderExpanded = !targetReminderExpanded" class="target-reminder-expanded">
+                        {{ targetReminderExpanded ? '[收起]' : '[展开查看]' }}
+                    </span>
+                </div>
+                <ul class="reminder-list" v-show="targetReminderExpanded">
+                    <li>要想提前躺平，就要<strong>提高存款</strong>。存款越多，目标剩余越少，达成时间越短。可以试试编辑每年收入和支出情况对比看看。</li>
+                    <li>要么<strong>提高存款</strong>，要么<strong>延长奋斗年限</strong>。收入不变时，只有存款能帮你"买时间"。</li>
+                    <li>目标剩余金额 = 目标金额 - 当前存款。存款每多一分，剩余金额就少一分。</li>
+                    <li>如果存款为 <strong>0</strong>，最低留存 = 每年支出，只能从头攒起。</li>
+                    <li>两种选择：<strong>换工作降薪</strong> → 拉长时间；<strong>想提前躺平</strong> → 增加存款。鱼和熊掌不可兼得，但存款可以同时缩短时间、降低对收入的要求。</li>
+                </ul>
+            </div>
+
             <!-- 底部按钮 -->
             <div class="form-actions">
                 <button class="btn-cancel" @click="closeTargetModal">关闭</button>
@@ -1383,36 +1868,47 @@
 
     <!-- 银行卡管理弹窗 -->
     <div v-if="bankManagerVisible" class="modal-overlay">
-        <div class="modal-box" style="max-width:520px;">
+        <div class="modal-box bank-card-manager-box">
             <div class="modal-title">
-                <span>💳 银行卡管理</span>
-                <div>
-                    <button class="btn-add-card" @click="openAddBankCard">＋ 新增</button>
-                    <button class="close-btn" @click="bankManagerVisible = false">✕</button>
+                <div class="div1">
+                    <span>💳 银行卡管理</span>
+                    <button class="btn-add-card-inline" @click="openAddBankCard">＋ 新增</button>
+                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">🗑️ 回收站 ({{ deletedCards.length }})</button>
                 </div>
+                <button class="close-btn" @click="bankManagerVisible = false">✕</button>
             </div>
-
-            <div v-if="allConfigs.length === 0" class="empty-cell" style="text-align:center;padding:20px 0;color:#999;">
-                暂无银行卡，请添加
+            <div class="modal-desc">
+                图例说明：
+                <span>✅ 在列表中显示</span>
+                <span>❌ 不在列表中显示</span>
+                <span>🚫 已禁用</span>
             </div>
-            <div v-for="f in allConfigs" :key="f.key" class="bank-card-item"
-                 :class="{ 'bank-card-disabled': f.disabled }">
-                <div>
+            <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
+            <div v-for="f in allConfigs.filter(c => !c.isDeleted)" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+                <div class="bank-card-info">
+                    <span v-if="f.disabled" class="disabled-icon">🚫</span>
+                    <span v-else class="list-status-icon" :class="f.showInList !== false ? 'list-on' : 'list-off'">
+                        {{ f.showInList !== false ? '✅' : '❌' }}
+                    </span>
                     <span class="bank-card-label">{{ f.label }}</span>
                     <span class="bank-card-types">
-                        ({{ f.category.includes('deposit') ? '存款' : ''
-                        }}{{ f.category.includes('debt') && f.category.includes('deposit') ? '、' : ''
-                        }}{{ f.category.includes('debt') ? '负债' : '' }})
+                        <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
+                        <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
                     </span>
+                    <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
-                    <button @click="openEditBankCard(f)">编辑</button>
-                    <button v-if="!f.disabled" class="btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
-                    <button v-else class="btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
+                    <template v-if="!f.disabled">
+                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
+                        <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
+                    </template>
+                    <template v-else>
+                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
+                        <button class="btn-toggle-disable btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
+                    </template>
                 </div>
             </div>
-
-            <div class="form-actions" style="margin-top:12px;">
+            <div class="form-actions config-actions">
                 <button class="btn-cancel" @click="bankManagerVisible = false">关闭</button>
             </div>
         </div>
@@ -1420,28 +1916,153 @@
 
     <!-- 新增/编辑银行卡弹窗 -->
     <div v-if="bankFormVisible" class="modal-overlay">
-        <div class="modal-box" style="max-width:400px;">
+        <div class="modal-box bank-card-form-box">
             <div class="modal-title">
-                <span>{{ bankFormMode === 'add' ? '新增银行卡' : '编辑银行卡' }}</span>
+                <span>{{ bankFormMode === 'add' ? '➕ 新增银行卡' : '✏️ 编辑银行卡' }}</span>
                 <button class="close-btn" @click="closeBankCardForm">✕</button>
             </div>
 
+            <!-- 显示名称 -->
             <div class="form-group form-row">
-                <label>显示名称</label>
-                <input v-model="bankForm.label" placeholder="如：招商银行" style="flex:1;"/>
+                <label>显示名称: </label>
+                <input v-model="bankForm.label" type="text" placeholder="如：招商银行" class="form-input-flex" />
             </div>
 
-            <div class="form-group">
-                <label>类型</label>
-                <div class="checkbox-group">
-                    <label><input type="checkbox" v-model="bankForm.category" value="deposit"> 存款</label>
-                    <label><input type="checkbox" v-model="bankForm.category" value="debt"> 负债</label>
+            <!-- 类型 -->
+            <div class="form-group form-row">
+                <label>类型: </label>
+                <div class="category-checkbox-group">
+                    <label><input type="checkbox" v-model="bankForm.category" value="deposit" /> 存款</label>
+                    <label><input type="checkbox" v-model="bankForm.category" value="debt" /> 负债</label>
+                    <span class="type-hint">（至少选一项）</span>
                 </div>
             </div>
 
+            <!-- 列表显示 -->
+            <div class="form-group form-row">
+                <label>列表显示: </label>
+                <div class="list-display-options">
+                    <label class="list-display-option"><input type="radio" v-model="bankForm.showInList" :value="true" /> 显示 <span class="list-status-icon list-on">✅</span></label>
+                    <label class="list-display-option"><input type="radio" v-model="bankForm.showInList" :value="false" /> 不显示 <span class="list-status-icon list-off">❌</span></label>
+                </div>
+            </div>
+
+            <!-- 备注 -->
+            <div class="form-group form-row">
+                <label>备注: </label>
+                <input v-model="bankForm.remark" type="text" placeholder="可选备注" class="form-input-flex" />
+            </div>
+
             <div class="form-actions">
-                <button class="btn-cancel" @click="closeBankCardForm">取消</button>
+                <button class="btn-cancel" @click="closeBankCardForm">关闭</button>
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
+            </div>
+            <div class="form-actions form-actions-sub" v-if="bankFormMode === 'edit'">
+                <button class="btn-delete" style="flex:1" @click="deleteBankCard">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 银行卡回收站 -->
+    <div v-if="recycleBinVisible" class="modal-overlay">
+        <div class="modal-box recycle-bin-box">
+            <div class="modal-title">
+                <span>🗑️ 银行卡回收站</span>
+                <button class="close-btn" @click="closeRecycleBin">✕</button>
+            </div>
+            <div class="modal-desc">
+                已删除的银行卡及其历史记录数据可在此恢复；彻底删除会同时清除历史记录中的对应数据。
+            </div>
+            <div v-if="deletedCards.length === 0" class="bank-card-empty">回收站为空</div>
+            <div v-for="f in deletedCards" :key="f.key" class="bank-card-item">
+                <div class="bank-card-info">
+                    <span class="disabled-icon">🗑️</span>
+                    <span class="bank-card-label">{{ f.label }}</span>
+                    <span class="bank-card-types">
+                        <span v-if="f.category.includes('deposit')" class="type-badge type-deposit">存款</span>
+                        <span v-if="f.category.includes('debt')" class="type-badge type-debt">负债</span>
+                    </span>
+                    <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
+                </div>
+                <div class="bank-card-actions">
+                    <button class="btn-enable" @click="restoreCard(f)">↩️ 恢复</button>
+                    <!-- 彻底删除：功能已完整实现，为确保数据安全，入口暂时注释，如有需要请自行取消注释后即可使用 -->
+                    <!-- <button class="btn-permanent-delete" @click="requestPermanentDelete(f)">彻底删除</button> -->
+                </div>
+            </div>
+            <div class="form-actions config-actions"><button class="btn-cancel" @click="closeRecycleBin">关闭</button></div>
+        </div>
+    </div>
+
+    <!-- 彻底删除确认弹窗 -->
+    <div v-if="recycleConfirmVisible" class="modal-overlay">
+        <div class="modal-box recycle-confirm-box">
+            <div class="modal-title">
+                <span>⚠️ 彻底删除银行卡</span>
+                <button class="close-btn" @click="cancelPermanentDelete">✕</button>
+            </div>
+            <div class="permanent-delete-warning">
+                <div class="warning-title">⚠️ 此操作不可恢复！</div>
+                <p>即将彻底删除银行卡「<strong>{{ recycleTargetCard && recycleTargetCard.label }}</strong>」，该操作将：</p>
+                <ul>
+                    <li>从系统中移除该银行卡的配置</li>
+                    <li><strong>永久清除</strong>所有历史记录中该银行卡的存款 / 负债数据</li>
+                    <li>删除后无法还原（建议操作前先导出 JSON 备份）</li>
+                </ul>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelPermanentDelete">取消</button>
+                <button class="btn-permanent-delete-confirm" @click="confirmPermanentDelete">确认彻底删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出方式选择弹窗 -->
+    <div v-if="exportModalVisible" class="modal-overlay">
+        <div class="modal-box import-modal-box">
+            <div class="modal-title">
+                <span>📤 导出数据</span>
+                <button class="close-btn" @click="cancelExport">✕</button>
+            </div>
+            <div class="import-modal-desc">请选择导出格式：</div>
+            <div class="import-options">
+                <button class="import-option import-option-json" @click="doExport('json')">
+                    <div class="import-option-title">📥 导出JSON</div>
+                    <div class="import-option-desc">导出 JSON 数据文件，包含记录、银行卡配置、目标计划，可用于备份或再次导入</div>
+                </button>
+                <button class="import-option import-option-csv" @click="doExport('csv')">
+                    <div class="import-option-title">📊 导出CSV表格</div>
+                    <div class="import-option-desc">导出 CSV 表格，便于用 Excel / WPS 打开查看分析</div>
+                </button>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelExport">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入方式选择弹窗 -->
+    <div v-if="importModalVisible" class="modal-overlay">
+        <div class="modal-box import-modal-box">
+            <div class="modal-title">
+                <span>📤 导入数据</span>
+                <button class="close-btn" @click="cancelImport">✕</button>
+            </div>
+            <div class="import-modal-desc">
+                文件包含 <strong>{{ importStats.records }}</strong> 条记录<template v-if="importStats.configs">、<strong>{{ importStats.configs }}</strong> 个银行卡配置</template><template v-if="importStats.hasTarget">、目标计划</template>。请选择导入方式：
+            </div>
+            <div class="import-options">
+                <button class="import-option" @click="doImport('merge')">
+                    <div class="import-option-title">🔀 合并导入</div>
+                    <div class="import-option-desc">按日期去重，已有日期的记录将被覆盖更新</div>
+                </button>
+                <button class="import-option import-option-danger" @click="doImport('overwrite')">
+                    <div class="import-option-title">🔄 覆盖导入</div>
+                    <div class="import-option-desc">清空当前数据，完全替换为文件内容</div>
+                </button>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" @click="cancelImport">取消</button>
             </div>
         </div>
     </div>
@@ -1495,6 +2116,72 @@
         return 'card_' + Date.now();
     }
 
+    /**
+     * 软删除银行卡（标记 isDeleted，历史数据保留）
+     * @param {Array} configs 银行卡配置数组
+     * @param {string} key 银行卡 key
+     * @returns {boolean} 是否删除成功
+     */
+    function softDeleteBankCard(configs, key) {
+        const card = configs.find(c => c.key === key);
+        if (!card) return false;
+        card.isDeleted = true;
+        saveConfig(configs);
+        return true;
+    }
+
+    /**
+     * 恢复银行卡：软删除标记还原，历史数据自动恢复显示
+     * @param {Array} configs 银行卡配置数组
+     * @param {string} key 银行卡 key
+     * @returns {Object|null} 恢复后的银行卡配置；不存在时返回 null
+     */
+    function restoreBankCard(configs, key) {
+        const card = configs.find(c => c.key === key);
+        if (!card) return null;
+        card.isDeleted = false;
+        card.showInList = true; // 恢复后默认重新显示在列表中
+        saveConfig(configs);
+        return card;
+    }
+
+    /**
+     * 彻底删除银行卡：从配置中移除，并清除所有历史记录中该卡字段。不可恢复。
+     * @param {Array} configs 银行卡配置数组
+     * @param {Array} records 账户记录数组
+     * @param {string} key 银行卡 key
+     * @returns {Object|null} {label, removedCount}；不存在时返回 null
+     */
+    function permanentDeleteBankCard(configs, records, key) {
+        const card = configs.find(c => c.key === key);
+        if (!card) return null;
+        const label = card.label;
+
+        const idx = configs.findIndex(c => c.key === key);
+        if (idx !== -1) configs.splice(idx, 1);
+        saveConfig(configs);
+
+        const depositField = key + '_deposit';
+        const debtField = key + '_debt';
+        let removedCount = 0;
+        (records || []).forEach(rec => {
+            let changed = false;
+            if (Object.prototype.hasOwnProperty.call(rec, depositField)) {
+                delete rec[depositField];
+                changed = true;
+            }
+            if (Object.prototype.hasOwnProperty.call(rec, debtField)) {
+                delete rec[debtField];
+                changed = true;
+            }
+            if (changed) removedCount++;
+        });
+        if (removedCount > 0) {
+            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+        }
+        return {label: label, removedCount: removedCount};
+    }
+
     // 目标相关公共函数
     /**
      * 计算从今天到目标日期的剩余月数（四舍五入到月）
@@ -1513,8 +2200,8 @@
     }
 
     /**
-     * 计算目标金额：每年计划费用 ÷ 12 × 剩余月数
-     * @param {number|string} annualExpense - 每年计划费用
+     * 计算目标金额：每年支出 ÷ 12 × 剩余月数
+     * @param {number|string} annualExpense - 每年支出
      * @param {string} targetDateStr - 目标日期字符串
      * @returns {number} 目标金额，四舍五入到整数
      */
@@ -1532,9 +2219,10 @@
      */
     function buildTargetData(form) {
         return {
-            annualIncome: form.annualIncome || '',   // 年收入，用户填写
-            incomeRemark: form.incomeRemark || '',   // 年收入补充说明，用户填写
-            annualExpense: form.annualExpense || '', // 每年计划费用，用户填写
+            annualIncome: form.annualIncome || '',   // 每年收入，用户填写
+            incomeRemark: form.incomeRemark || '',   // 每年收入补充说明，用户填写
+            annualExpense: form.annualExpense || '', // 每年支出，用户填写
+            expenseRemark: form.expenseRemark || '', // 每年支出说明，用户填写
             targetDate: form.targetDate || '',       // 目标日期，用户填写
             targetRemark: form.targetRemark || ''    // 目标说明，用户填写
         };
@@ -1628,6 +2316,7 @@
             const modalVisible = ref(false);
             const modalMode = ref('add');   // 'add' | 'edit'
             const editable = ref(false);    // 编辑态（true）还是查看态（false）
+            const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
             const editIndex = ref(-1);
             const form = ref({});
             const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
@@ -1636,17 +2325,24 @@
             const bankManagerVisible = ref(false);
             const bankFormVisible = ref(false);
             const bankFormMode = ref('add');  // 'add' | 'edit'
-            const bankForm = ref({key: '', label: '', category: ['deposit', 'debt']});
+            const bankForm = ref({key: '', label: '', category: ['deposit', 'debt'], showInList: true});
             const editingCardKey = ref('');
             const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
+
+            // 回收站
+            const recycleBinVisible = ref(false);
+            const recycleConfirmVisible = ref(false); // 彻底删除红色警示确认弹窗
+            const recycleTargetCard = ref(null);      // 待彻底删除的银行卡
 
             // 目标
             const targetModalVisible = ref(false);
             const targetEditable = ref(false);
+            const targetReminderExpanded = ref(false);
             const targetForm = ref({
                 annualIncome: '',
                 incomeRemark: '',
-                annualExpense: '',   // 每年计划费用
+                annualExpense: '',   // 每年支出
+                expenseRemark: '',   // 每年支出说明
                 targetAmount: 0,     // 目标金额自动计算，不再手工输入
                 targetDate: '',
                 targetRemark: '',
@@ -1656,7 +2352,7 @@
                 targetDuration: ''
             });
             const targetCalculated = ref(false);
-            // 旧版目标数据检测（有目标金额但缺每年计划费用，提示用户补充）
+            // 旧版目标数据检测（有目标金额但缺每年支出，提示用户补充）
             const legacyTargetDetected = ref(false);
 
             // 计算
@@ -1668,7 +2364,7 @@
             });
 
             /**
-             * 目标金额自动计算（每年计划费用 ÷ 12 × 剩余月数）
+             * 目标金额自动计算（每年支出 ÷ 12 × 剩余月数）
              */
             const computedTargetAmount = computed(() => {
                 return calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
@@ -1682,16 +2378,16 @@
             });
 
             /**
-             * 旧版数据折算的每年计划费用参考值（目标金额 × 12 ÷ 剩余月数）
+             * 旧版数据折算的每年支出参考值（目标金额 × 12 ÷ 剩余月数）
              */
             const legacySuggestedExpense = computed(() => {
                 if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
                 return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
             });
 
-            // displayFields: 列表中实际显示的银行卡列（按类型拆成存款/负债独立列）
+            // displayFields: 列表中实际显示的银行卡列（禁用、隐藏或已删除的不显示）
             const displayFields = computed(() => {
-                return configs.value;
+                return configs.value.filter(f => !f.disabled && !f.isDeleted && f.showInList !== false);
             });
             const allConfigs = computed(() => configs.value);
             const editableFields = computed(() => {
@@ -1718,27 +2414,35 @@
             });
 
             // 核心函数
+            // 列表单元格取值：
+            // - 字段非零 → 显示数值（历史数据，与当前 category 无关）
+            // - 字段为 0 且 category 含该类型 → 显示 0（配置了类型，真实为 0）
+            // - 字段为 0 且 category 不含该类型 → 返回 null 显示 "-"（取消类型后新增的数据）
             function getFieldValue(item, f, type) {
                 const fieldName = f.key + '_' + type;
-                if (item[fieldName] === undefined || item[fieldName] === null) return null;
-                return Number(item[fieldName]) || 0;
+                const val = Number(item[fieldName]) || 0;
+                if (val !== 0) return val;
+                if (!f.category.includes(type)) return null;
+                return 0;
             }
 
+            // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
             function getTotalDeposit(item) {
                 let sum = 0;
-                configs.value.forEach(f => {
-                    if (f.category.includes('deposit')) {
-                        sum += Number(item[f.key + '_deposit']) || 0;
+                Object.keys(item).forEach(key => {
+                    if (key.endsWith('_deposit')) {
+                        sum += Number(item[key]) || 0;
                     }
                 });
                 return sum;
             }
 
+            // 总负债：所有 *_debt 字段之和（含已删除银行卡的历史数据）
             function getTotalDebt(item) {
                 let sum = 0;
-                configs.value.forEach(f => {
-                    if (f.category.includes('debt')) {
-                        sum += Number(item[f.key + '_debt']) || 0;
+                Object.keys(item).forEach(key => {
+                    if (key.endsWith('_debt')) {
+                        sum += Number(item[key]) || 0;
                     }
                 });
                 return sum;
@@ -1746,6 +2450,53 @@
 
             function getBalance(item) {
                 return getTotalDeposit(item) - getTotalDebt(item);
+            }
+
+            // 活动银行卡 key（未删除的卡，含禁用）
+            function getActiveCardKeys() {
+                return configs.value.filter(c => !c.isDeleted).map(c => c.key);
+            }
+
+            // 检查记录中是否存在已删除银行卡的数据（决定是否显示汇总行）
+            function hasDeletedFields(item) {
+                const activeKeys = getActiveCardKeys();
+                return Object.keys(item).some(key => {
+                    if (key.endsWith('_deposit') || key.endsWith('_debt')) {
+                        const prefix = key.endsWith('_deposit') ? key.slice(0, -8) : key.slice(0, -5);
+                        return activeKeys.indexOf(prefix) === -1 && Number(item[key]) !== 0;
+                    }
+                    return false;
+                });
+            }
+
+            // 已删除银行卡的存款合计
+            function getDeletedDepositTotal(item) {
+                const activeKeys = getActiveCardKeys();
+                let sum = 0;
+                Object.keys(item).forEach(key => {
+                    if (key.endsWith('_deposit')) {
+                        const prefix = key.slice(0, -8);
+                        if (activeKeys.indexOf(prefix) === -1) {
+                            sum += Number(item[key]) || 0;
+                        }
+                    }
+                });
+                return sum;
+            }
+
+            // 已删除银行卡的负债合计
+            function getDeletedDebtTotal(item) {
+                const activeKeys = getActiveCardKeys();
+                let sum = 0;
+                Object.keys(item).forEach(key => {
+                    if (key.endsWith('_debt')) {
+                        const prefix = key.slice(0, -5);
+                        if (activeKeys.indexOf(prefix) === -1) {
+                            sum += Number(item[key]) || 0;
+                        }
+                    }
+                });
+                return sum;
             }
 
             /**
@@ -1780,11 +2531,15 @@
              * @returns {boolean}
              */
             function shouldShowFieldInModal(f) {
+                // 已删除的银行卡不单独显示，数据归入「已删除汇总」
+                if (f.isDeleted) {
+                    return false;
+                }
                 // 添加模式：只显示未禁用的银行卡
                 if (modalMode.value === 'add') {
                     return !f.disabled;
                 }
-                // 该记录中该卡是否有非零金额
+                // 该记录中该卡是否有非零金额（按 category 检查，避免 undefined 字段误判）
                 const hasNonZero = f.category.some(type => {
                     const val = Number(form.value[f.key + '_' + type]) || 0;
                     return val !== 0;
@@ -1795,6 +2550,16 @@
                 }
                 // 查看模式：只显示有非零金额的卡
                 return hasNonZero;
+            }
+
+            // 弹窗中某卡某类型是否显示：
+            // - 当前配置含该类型 → 显示
+            // - add 模式（含复制）：严格按当前配置，不带出已取消类型的历史数据
+            // - edit/view 模式：有非零历史数据也显示（历史数据可继续查看/修改）
+            function shouldShowTypeField(f, type) {
+                if (f.category.includes(type)) return true;
+                if (modalMode.value === 'add') return false;
+                return (Number(form.value[f.key + '_' + type]) || 0) !== 0;
             }
 
             function prevPage() {
@@ -1838,15 +2603,16 @@
                     // 当前总余额：取最新一条记录的余额
                     const latest = sorted[0];
                     const currentBalance = latest ? getBalance(latest) : 0;
-                    // 目标金额实时计算（每年计划费用 ÷ 12 × 剩余月数）
+                    // 目标金额实时计算（每年支出 ÷ 12 × 剩余月数）
                     const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
                     // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
                     const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
 
                     const targetRows = [
-                        ['年收入', targetData.annualIncome || ''],
-                        ['年收入说明', targetData.incomeRemark || ''],
-                        ['每年计划费用', targetData.annualExpense || ''],
+                        ['每年收入', targetData.annualIncome || ''],
+                        ['每年收入说明', targetData.incomeRemark || ''],
+                        ['每年支出', targetData.annualExpense || ''],
+                        ['每年支出说明', targetData.expenseRemark || ''],
                         ['目标日期', targetData.targetDate || ''],
                         ['目标金额', targetAmount],
                         ['目标说明', targetData.targetRemark || ''],
@@ -1872,10 +2638,12 @@
 
                 // 2. 构建表头
                 const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
-                configs.value.forEach(f => {
+                configs.value.filter(f => !f.isDeleted).forEach(f => {
                     if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
                     if (f.category.includes('debt')) headers.push(`${f.label}负债`);
                 });
+                headers.push('已删除汇总存款');
+                headers.push('已删除汇总负债');
                 headers.push('备注');
 
                 // 3. 构建数据行
@@ -1890,10 +2658,12 @@
                         getTotalDeposit(item),
                         getTotalDebt(item),
                     ];
-                    configs.value.forEach(f => {
+                    configs.value.filter(f => !f.isDeleted).forEach(f => {
                         if (f.category.includes('deposit')) row.push(Number(item[f.key + '_deposit']) || 0);
                         if (f.category.includes('debt')) row.push(Number(item[f.key + '_debt']) || 0);
                     });
+                    row.push(getDeletedDepositTotal(item));
+                    row.push(getDeletedDebtTotal(item));
                     row.push(item.remark || '');
                     return row;
                 });
@@ -1964,11 +2734,35 @@
                 showToast('✅ 导出成功');
             }
 
-            // 导入模式：overwrite=覆盖导入 / merge=合并导入
-            let importMode = 'overwrite';
+            // 导出方式选择弹窗状态
+            // 操作栏「导出」按钮弹出选择，明确导出 JSON 还是 CSV，避免两个按钮挤在操作栏
+            const exportModalVisible = ref(false);
 
-            function triggerImport(mode) {
-                importMode = mode;
+            function openExportModal() {
+                exportModalVisible.value = true;
+            }
+
+            function cancelExport() {
+                exportModalVisible.value = false;
+            }
+
+            function doExport(type) {
+                exportModalVisible.value = false;
+                if (type === 'json') {
+                    exportJSON();
+                } else {
+                    exportCSV();
+                }
+            }
+
+            // 导入方式选择弹窗状态
+            // 文件解析成功后先暂存数据，弹出「合并 / 覆盖」选择弹窗，用户确认后才真正写入。
+            // 相比原生 confirm 的「确定=合并/取消=覆盖」，按钮语义更直白，避免误操作。
+            const importModalVisible = ref(false);
+            const importData = ref(null);   // 暂存解析后的导入数据
+            const importStats = ref({});    // 文件统计信息，用于弹窗展示
+
+            function triggerImport() {
                 document.getElementById('fileInput').click();
             }
 
@@ -1976,59 +2770,85 @@
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
-                reader.onload = async (e) => {
+                reader.onload = (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
                         if (!data.records || !Array.isArray(data.records)) {
                             showToast('❌ 无效的数据格式');
                             return;
                         }
-                        if (importMode === 'overwrite') {
-                            if (confirm(`将覆盖导入 ${data.records.length} 条记录，当前数据将被替换。确认？`)) {
-                                // 覆盖配置
-                                if (data.config && Array.isArray(data.config)) {
-                                    configs.value = data.config;
-                                    saveConfig(configs.value);
-                                }
-                                // 覆盖记录
-                                records.value = data.records;
-                                saveData();
-                                // 覆盖目标
-                                if (data.target) {
-                                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
-                                } else {
-                                    localStorage.removeItem(STORAGE_KEYS.TARGET);
-                                }
-                                showToast(`✅ 成功覆盖导入 ${data.records.length} 条记录`);
-                                currentPage.value = 1;
-                            }
-                        } else if (importMode === 'merge') {
-                            // 合并导入：跳过已有日期的记录
-                            let addedCount = 0;
-                            let skippedCount = 0;
-                            const existingDates = new Set(records.value.map(r => r.date));
-                            data.records.forEach(rec => {
-                                if (!existingDates.has(rec.date)) {
-                                    records.value.push(rec);
-                                    addedCount++;
-                                } else {
-                                    skippedCount++;
-                                }
-                            });
-                            saveData();
-                            // 合并目标：有则直接覆盖
-                            if (data.target) {
-                                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
-                            }
-                            showToast(`✅ 合并导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条（日期重复）`);
-                            currentPage.value = 1;
-                        }
+                        // 解析成功：暂存数据，弹出「合并 / 覆盖」选择弹窗
+                        importData.value = data;
+                        importStats.value = {
+                            records: data.records.length,
+                            configs: data.config && Array.isArray(data.config) ? data.config.length : 0,
+                            hasTarget: !!data.target,
+                        };
+                        importModalVisible.value = true;
                     } catch (err) {
                         showToast('❌ JSON 解析失败');
                     }
                 };
                 reader.readAsText(file);
+                // 清空 input，允许重复选择同一文件
                 event.target.value = '';
+            }
+
+            function cancelImport() {
+                importModalVisible.value = false;
+                importData.value = null;
+            }
+
+            function doImport(mode) {
+                const data = importData.value;
+                if (!data) return;
+                importModalVisible.value = false;
+                importData.value = null;
+
+                if (mode === 'merge') {
+                    // 合并导入：按日期去重，已有日期的记录覆盖更新
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    data.records.forEach(rec => {
+                        const idx = records.value.findIndex(r => r.date === rec.date);
+                        if (idx !== -1) {
+                            records.value[idx] = rec;
+                            updatedCount++;
+                        } else {
+                            records.value.push(rec);
+                            addedCount++;
+                        }
+                    });
+                    saveData();
+                    // 合并银行卡配置：直接覆盖
+                    if (data.config && Array.isArray(data.config)) {
+                        configs.value = data.config;
+                        saveConfig(configs.value);
+                    }
+                    // 合并目标：有则直接覆盖
+                    if (data.target) {
+                        localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    }
+                    showToast(`✅ 合并导入完成：新增 ${addedCount} 条，更新 ${updatedCount} 条`);
+                } else {
+                    // 覆盖导入：清空当前数据，完全替换为文件内容
+                    if (data.config && Array.isArray(data.config)) {
+                        configs.value = data.config;
+                        saveConfig(configs.value);
+                    } else {
+                        configs.value = [];
+                        saveConfig([]);
+                    }
+                    records.value = data.records.slice();
+                    saveData();
+                    if (data.target) {
+                        localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    } else {
+                        localStorage.removeItem(STORAGE_KEYS.TARGET);
+                    }
+                    showToast(`✅ 覆盖导入完成：已导入 ${records.value.length} 条记录`);
+                }
+                currentPage.value = 1;
             }
 
             // Toast
@@ -2104,6 +2924,7 @@
                 modalMode.value = 'add';
                 editable.value = true;
                 editIndex.value = -1;
+                isCopy.value = false;
                 form.value = getDefaultForm();
                 showRemark.value = false;
                 modalVisible.value = true;
@@ -2116,6 +2937,7 @@
                 modalMode.value = 'edit';
                 editable.value = false; // 默认查看态
                 editIndex.value = realIdx;
+                isCopy.value = false;
                 form.value = {...records.value[realIdx]};
                 showRemark.value = !!form.value.remark; // 有备注默认展开
                 modalVisible.value = true;
@@ -2159,9 +2981,24 @@
 
                 const clean = {date: f.date, remark: f.remark || ''};
                 Object.keys(f).forEach(k => {
-                    if (k !== 'date' && k !== 'remark') {
-                        clean[k] = Number(f[k]) || 0;
+                    if (k === 'date' || k === 'remark') return;
+                    // add 模式：跳过当前配置不含该类型的字段（复制带入的已取消类型数据不写入）
+                    if (modalMode.value === 'add') {
+                        let cardKey = null, type = null;
+                        if (k.endsWith('_deposit')) {
+                            cardKey = k.slice(0, -8);
+                            type = 'deposit';
+                        } else if (k.endsWith('_debt')) {
+                            cardKey = k.slice(0, -5);
+                            type = 'debt';
+                        }
+                        if (cardKey) {
+                            const card = configs.value.find(c => c.key === cardKey);
+                            // 复制带入的历史字段：仅当银行卡未禁用、未删除且当前配置含该类型时才写入
+                            if (!card || card.disabled || card.isDeleted || !card.category.includes(type)) return;
+                        }
                     }
+                    clean[k] = Number(f[k]) || 0;
                 });
 
                 if (modalMode.value === 'add') {
@@ -2182,6 +3019,7 @@
                 setTimeout(() => {
                     modalMode.value = 'add';
                     editIndex.value = -1;
+                    isCopy.value = true;
                     const today = new Date();
                     const y = today.getFullYear();
                     const m = String(today.getMonth() + 1).padStart(2, '0');
@@ -2233,13 +3071,13 @@
             }
 
             // 银行卡管理
-            function openBankManager() {
+            function openBankCardManager() {
                 bankManagerVisible.value = true;
             }
 
             function openAddBankCard() {
                 bankFormMode.value = 'add';
-                bankForm.value = {key: '', label: '', category: ['deposit', 'debt']};
+                bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true, remark: ''};
                 editingCardKey.value = '';
                 bankFormModified.value = false;
                 bankFormVisible.value = true;
@@ -2247,7 +3085,7 @@
 
             function openEditBankCard(card) {
                 bankFormMode.value = 'edit';
-                bankForm.value = {...card};
+                bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || '', originalCategory: [...card.category]};
                 editingCardKey.value = card.key;
                 bankFormModified.value = false;
                 bankFormVisible.value = true;
@@ -2271,12 +3109,26 @@
                     return;
                 }
 
+                // 编辑模式下取消了部分类型，需确认（历史数据不丢失，仍计入总存款/总负债）
+                if (bankFormMode.value === 'edit' && bankForm.value.originalCategory) {
+                    const removedTypes = bankForm.value.originalCategory.filter(t => !bankForm.value.category.includes(t));
+                    if (removedTypes.length > 0) {
+                        const typeMap = {deposit: '存款', debt: '负债'};
+                        const removedNames = removedTypes.map(t => typeMap[t] || t).join('、');
+                        if (!confirm(`您取消了"${removedNames}"类型，历史数据不会丢失，仍然会计入总存款/总负债；但后续新增记录将无法填写该类型。\n确定继续保存吗？`)) {
+                            return;
+                        }
+                    }
+                }
+
                 if (bankFormMode.value === 'add') {
                     configs.value.push({
                         key: generateKey(),
                         label: label,
                         category: [...bankForm.value.category],
                         disabled: false,
+                        showInList: bankForm.value.showInList !== false,
+                        remark: bankForm.value.remark || '',
                     });
                     showToast('✅ 银行卡已添加');
                 } else {
@@ -2287,6 +3139,8 @@
                     }
                     configs.value[idx].label = label;
                     configs.value[idx].category = [...bankForm.value.category];
+                    configs.value[idx].showInList = bankForm.value.showInList !== false;
+                    configs.value[idx].remark = bankForm.value.remark || '';
                     showToast('✅ 银行卡已更新');
                 }
                 saveConfig(configs.value);
@@ -2294,16 +3148,92 @@
                 bankFormVisible.value = false;
             }
 
+            // 删除银行卡（软删除：标记 isDeleted，历史数据保留，可到回收站恢复）
+            function deleteBankCard() {
+                const cardKey = editingCardKey.value;
+                const card = configs.value.find(f => f.key === cardKey);
+                if (!card) {
+                    showToast('❌ 银行卡不存在');
+                    return;
+                }
+                if (!confirm(`确定要删除银行卡「${card.label}」吗？\n历史数据保留，可到回收站恢复。`)) {
+                    return;
+                }
+                softDeleteBankCard(configs.value, cardKey);
+                bankFormVisible.value = false;
+                showToast(`✅ 已删除银行卡「${card.label}」`);
+            }
+
             function toggleBankCardDisabled(key) {
                 const card = configs.value.find(f => f.key === key);
                 if (!card) return;
                 const newState = !card.disabled;
                 const action = newState ? '禁用' : '启用';
-                if (confirm(`确定要${action}「${card.label}」吗？`)) {
+                let msg = `确定要${action}「${card.label}」吗？`;
+                if (newState) {
+                    msg += '\n\n🚫 禁用后：\n• 添加记录时不再显示该银行卡\n• 列表中将隐藏该银行卡列\n• 历史记录仍可查看和编辑（不会丢失数据）';
+                } else {
+                    msg += '\n\n✅ 启用后：\n• 添加记录时可重新使用该银行卡\n• 列表中将重新显示该银行卡列';
+                }
+                if (confirm(msg)) {
                     card.disabled = newState;
                     saveConfig(configs.value);
                     showToast(`✅ 已${action}「${card.label}」`);
                 }
+            }
+
+            // 回收站列表：已软删除的银行卡
+            const deletedCards = computed(() => configs.value.filter(c => c.isDeleted));
+
+            function openRecycleBin() {
+                recycleBinVisible.value = true;
+            }
+
+            function closeRecycleBin() {
+                recycleBinVisible.value = false;
+            }
+
+            // 恢复银行卡：软删除标记还原，历史记录中的对应数据自动恢复显示
+            function restoreCard(card) {
+                const restored = restoreBankCard(configs.value, card.key);
+                if (!restored) {
+                    showToast('❌ 银行卡不存在');
+                    return;
+                }
+                showToast(`✅ 已恢复银行卡「${restored.label}」，历史数据同步恢复`);
+            }
+
+            // 请求彻底删除：打开红色警示确认弹窗（入口按钮默认注释，逻辑保留）
+            function requestPermanentDelete(card) {
+                recycleTargetCard.value = card;
+                recycleConfirmVisible.value = true;
+            }
+
+            function cancelPermanentDelete() {
+                recycleConfirmVisible.value = false;
+                recycleTargetCard.value = null;
+            }
+
+            // 确认彻底删除：输入指定文字后执行，不可恢复
+            function confirmPermanentDelete() {
+                const card = recycleTargetCard.value;
+                if (!card) return;
+                const userInput = prompt('请键入「确定彻底删除银行卡」以确认彻底删除：');
+                if (userInput !== '确定彻底删除银行卡') {
+                    showToast('❌ 输入错误，取消删除');
+                    recycleConfirmVisible.value = false;
+                    recycleTargetCard.value = null;
+                    return;
+                }
+                recycleConfirmVisible.value = false;
+                recycleTargetCard.value = null;
+
+                const result = permanentDeleteBankCard(configs.value, records.value, card.key);
+                if (!result) {
+                    showToast('❌ 银行卡不存在');
+                    return;
+                }
+                showToast(`✅ 已彻底删除「${result.label}」，其历史数据共 ${result.removedCount} 条已清除`);
             }
 
             // 关闭银行卡表单弹窗，有未保存修改时先确认
@@ -2340,7 +3270,7 @@
                     }
                 } catch (_) {
                 }
-                // 检测旧版目标数据（有目标金额但缺每年计划费用，提示用户补充）
+                // 检测旧版目标数据（有目标金额但缺每年支出，提示用户补充）
                 legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
                 // 最新一条记录（日期最新）的总余额作为当前余额
                 const sorted = sortedRecords.value;
@@ -2367,7 +3297,7 @@
                 const target = calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
                 const current = Number(targetForm.value.currentBalance) || 0;
                 if (target <= 0 || annual <= 0) {
-                    showToast('请先填写有效的年收入和目标金额');
+                    showToast('请先填写有效的每年收入和目标金额');
                     return;
                 }
 
@@ -2458,6 +3388,7 @@
                 modalVisible,
                 modalMode,
                 editable,
+                isCopy,
                 form,
                 showRemark,
                 displayFields,
@@ -2476,10 +3407,14 @@
                 getTotalDeposit,
                 getTotalDebt,
                 getBalance,
+                getDeletedDepositTotal,
+                getDeletedDebtTotal,
+                hasDeletedFields,
                 getDiff,
                 formatNumber,
                 formatDateToDot,
                 shouldShowFieldInModal,
+                shouldShowTypeField,
 
                 openAddModal,
                 openEditModal,
@@ -2490,11 +3425,22 @@
                 filterNumber,
                 refreshData,
 
-                openBankManager,
+                openBankCardManager,
                 openAddBankCard,
                 openEditBankCard,
                 saveBankCard,
                 toggleBankCardDisabled,
+                deleteBankCard,
+                deletedCards,
+                openRecycleBin,
+                closeRecycleBin,
+                restoreCard,
+                requestPermanentDelete,
+                cancelPermanentDelete,
+                confirmPermanentDelete,
+                recycleBinVisible,
+                recycleConfirmVisible,
+                recycleTargetCard,
 
                 // 分页
                 currentPage,
@@ -2506,8 +3452,16 @@
                 // 导出和导入
                 exportCSV,
                 exportJSON,
+                exportModalVisible,
+                openExportModal,
+                cancelExport,
+                doExport,
                 triggerImport,
                 importJSON,
+                importModalVisible,
+                importStats,
+                cancelImport,
+                doImport,
 
                 // 全屏
                 toggleFullscreen,
@@ -2515,6 +3469,7 @@
                 // 目标
                 targetModalVisible,
                 targetEditable,
+                targetReminderExpanded,
                 targetForm,
                 targetCalculated,
                 computedTargetAmount,
