@@ -277,8 +277,6 @@ const app = createApp({
             targetDuration: ''
         });
         const targetCalculated = ref(false);
-        // 旧版目标数据检测（有目标金额但缺每年支出，提示用户补充）
-        const legacyTargetDetected = ref(false);
 
         // 计算
         /**
@@ -300,14 +298,6 @@ const app = createApp({
          */
         const computedDurationFromMonths = computed(() => {
             return formatDuration(computedMonths.value);
-        });
-
-        /**
-         * 旧版数据折算的每年支出参考值（目标金额 × 12 ÷ 剩余月数）
-         */
-        const legacySuggestedExpense = computed(() => {
-            if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
-            return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
         });
 
         // displayFields: 列表中实际显示的银行卡列（禁用、隐藏或已删除的不显示）
@@ -1195,8 +1185,6 @@ const app = createApp({
                 }
             } catch (_) {
             }
-            // 检测旧版目标数据（有目标金额但缺每年支出，提示用户补充）
-            legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
             // 最新一条记录（日期最新）的总余额作为当前余额
             const sorted = sortedRecords.value;
             const latest = sorted.length ? sorted[0] : null;
@@ -1211,7 +1199,6 @@ const app = createApp({
                 if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
             }
             targetModalVisible.value = false;
-            legacyTargetDetected.value = false;
         }
 
         /**
@@ -1400,8 +1387,6 @@ const app = createApp({
             computedTargetAmount,
             computedMonths,
             computedDurationFromMonths,
-            legacyTargetDetected,
-            legacySuggestedExpense,
             openTargetModal,
             closeTargetModal,
             calcTarget,

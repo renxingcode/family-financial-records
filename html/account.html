@@ -291,21 +291,6 @@
                 <div v-else class="remark-box">{{ targetForm.expenseRemark || '暂无说明' }}</div>
             </div>
 
-            <!-- 旧版目标数据兼容提示 -->
-            <div v-if="legacyTargetDetected" class="legacy-tip">
-                <template v-if="targetEditable">
-                    <template v-if="computedMonths > 0">
-                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年支出约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
-                    </template>
-                    <template v-else>
-                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年支出。
-                    </template>
-                </template>
-                <template v-else>
-                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年支出」自动计算目标金额，请点击「编辑」补充每年支出。
-                </template>
-            </div>
-
             <!-- 目标日期 -->
             <div class="form-group form-row">
                 <label>目标日期: </label>
