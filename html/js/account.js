@@ -305,6 +305,8 @@ const app = createApp({
             return configs.value.filter(f => !f.disabled && !f.isDeleted && f.showInList !== false);
         });
         const allConfigs = computed(() => configs.value);
+        // 银行卡管理面板列表（未删除的卡，含禁用）；顺序即 configs 数组顺序，供上移/下移手动排序
+        const activeCards = computed(() => configs.value.filter(c => !c.isDeleted));
         const editableFields = computed(() => {
             if (modalMode.value === 'add') {
                 return configs.value.filter(f => !f.disabled);
@@ -1100,6 +1102,25 @@ const app = createApp({
         // 回收站列表：已软删除的银行卡
         const deletedCards = computed(() => configs.value.filter(c => c.isDeleted));
 
+        /**
+         * 手动调整银行卡顺序（在当前列表内上移/下移一位，交换 configs 数组下标并整体持久化）
+         * @param list 当前渲染的卡列表（管理面板传 activeCards，回收站传 deletedCards）
+         * @param idx 当前项下标
+         * @param dir -1 上移 / 1 下移
+         */
+        function moveCard(list, idx, dir) {
+            const swapIdx = idx + dir;
+            if (swapIdx < 0 || swapIdx >= list.length) return;
+            const arr = configs.value;
+            const ia = arr.findIndex(c => c.key === list[idx].key);
+            const ib = arr.findIndex(c => c.key === list[swapIdx].key);
+            if (ia < 0 || ib < 0) return;
+            const temp = arr[ia];
+            arr[ia] = arr[ib];
+            arr[ib] = temp;
+            saveConfig(configs.value);
+        }
+
         function openRecycleBin() {
             recycleBinVisible.value = true;
         }
@@ -1305,6 +1326,7 @@ const app = createApp({
             showRemark,
             displayFields,
             allConfigs,
+            activeCards,
             editableFields,
             bankManagerVisible,
             bankFormVisible,
@@ -1344,6 +1366,7 @@ const app = createApp({
             toggleBankCardDisabled,
             deleteBankCard,
             deletedCards,
+            moveCard,
             openRecycleBin,
             closeRecycleBin,
             restoreCard,

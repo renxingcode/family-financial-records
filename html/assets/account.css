@@ -866,6 +866,31 @@ body {
     background: #1e8449;
 }
 
+/* 银行卡手动排序（上移/下移）按钮 */
+.card-move-btns {
+    display: inline-flex;
+    gap: 3px;
+    margin-right: 4px;
+}
+
+.bank-card-actions .btn-move {
+    width: 24px;
+    padding: 2px 0;
+    font-weight: bold;
+    background: #dfe6ee;
+    color: #4a5568;
+}
+
+.bank-card-actions .btn-move:active {
+    background: #c2cbd8;
+}
+
+.bank-card-actions .btn-move:disabled {
+    background: #eef1f5;
+    color: #b8c0cc;
+    cursor: not-allowed;
+}
+
 /* 银行卡管理面板 */
 .bank-card-manager-box .modal-title {
     display: flex;

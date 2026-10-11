@@ -436,7 +436,7 @@
                 <span>🚫 已禁用</span>
             </div>
             <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
-            <div v-for="f in allConfigs.filter(c => !c.isDeleted)" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+            <div v-for="(f, idx) in activeCards" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
                 <div class="bank-card-info">
                     <span v-if="f.disabled" class="disabled-icon">🚫</span>
                     <span v-else class="list-status-icon" :class="f.showInList !== false ? 'list-on' : 'list-off'">
@@ -450,6 +450,10 @@
                     <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
+                    <span class="card-move-btns">
+                        <button class="btn-move" :disabled="idx === 0" @click="moveCard(activeCards, idx, -1)" title="上移">↑</button>
+                        <button class="btn-move" :disabled="idx === activeCards.length - 1" @click="moveCard(activeCards, idx, 1)" title="下移">↓</button>
+                    </span>
                     <template v-if="!f.disabled">
                         <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
                         <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
@@ -526,7 +530,7 @@
                 已删除的银行卡及其历史记录数据可在此恢复；彻底删除会同时清除历史记录中的对应数据。
             </div>
             <div v-if="deletedCards.length === 0" class="bank-card-empty">回收站为空</div>
-            <div v-for="f in deletedCards" :key="f.key" class="bank-card-item">
+            <div v-for="(f, idx) in deletedCards" :key="f.key" class="bank-card-item">
                 <div class="bank-card-info">
                     <span class="disabled-icon">🗑️</span>
                     <span class="bank-card-label">{{ f.label }}</span>
@@ -537,6 +541,10 @@
                     <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
+                    <span class="card-move-btns">
+                        <button class="btn-move" :disabled="idx === 0" @click="moveCard(deletedCards, idx, -1)" title="上移">↑</button>
+                        <button class="btn-move" :disabled="idx === deletedCards.length - 1" @click="moveCard(deletedCards, idx, 1)" title="下移">↓</button>
+                    </span>
                     <button class="btn-enable" @click="restoreCard(f)">↩️ 恢复</button>
                     <!-- 彻底删除：功能已完整实现，为确保数据安全，入口暂时注释，如有需要请自行取消注释后即可使用 -->
                     <!-- <button class="btn-permanent-delete" @click="requestPermanentDelete(f)">彻底删除</button> -->
