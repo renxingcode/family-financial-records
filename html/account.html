@@ -117,11 +117,19 @@
                         {{ editable ? '✏️ 编辑记录' : '📋 查看记录' }}
                     </template>
                 </span>
+                <label v-if="modalMode === 'edit' && !editable" class="detail-diff-switch">
+                    <input type="checkbox" v-model="showPrevData" /> 对比上次
+                </label>
                 <button class="close-btn" @click="confirmClose">✕</button>
             </div>
 
+            <!-- 对比上次全局操作提示 -->
+            <div v-if="showPrevData && modalMode === 'edit' && !editable" class="notice-tip">
+                💡 点击灰色的上次金额数据可查看“对比差额”。
+            </div>
+
             <!-- 复制记录时的提示 -->
-            <div v-if="isCopy" class="copy-tip">
+            <div v-if="isCopy" class="notice-tip">
                 💡 复制记录会自动带入上一条数据的金额，但字段显示以当前银行卡配置为准（已禁用的类型不会显示）。请核对金额是否正确。
             </div>
 
@@ -130,22 +138,39 @@
                 <label>【日期】</label>
                 <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
                 <span v-else>{{ formatDateToDot(form.date) }}</span>
+                <span v-if="showPrevData" class="prev-date">上次日期：{{ prevDateText }}</span>
             </div>
-
             <!-- 查看态汇总 -->
             <template v-if="modalMode === 'edit' && !editable">
                 <div class="form-group form-row">
                     <label>【总余额】</label>
-                    <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
-                        {{ formatNumber(getBalance(form)) }} 元
-                    </span>
-                    <span class="text-muted fs-12">( {{ formatNumber(getTotalDeposit(form)) }} - {{ formatNumber(getTotalDebt(form)) }} )</span>
+                    <div class="field-wrapper">
+                        <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                            {{ formatNumber(getBalance(form)) }} 元
+                        </span>
+                        <span v-if="showPrevData" class="prev-date prev-clickable" @click="toggleBubble('total_balance')">
+                            上次总余额：{{ getPrevData('total_balance') && getPrevData('total_balance').prev !== null ? formatNumber(getPrevData('total_balance').prev) : '-' }} 元
+                            <span v-if="bubbleKey === 'total_balance'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_balance') && getPrevData('total_balance').diff) }}</span>
+                        </span>
+                    </div>
                 </div>
                 <div class="form-group form-row">
                     <label>【汇总】</label>
                     <div class="field-wrapper">
-                        <span class="sub-input"><span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span></span>
-                        <span class="sub-input"><span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span></span>
+                        <span class="sub-input">
+                            <span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span>
+                            <span v-if="showPrevData" class="prev-value" @click="toggleBubble('total_deposit')">
+                                上次：{{ getPrevData('total_deposit') && getPrevData('total_deposit').prev !== null ? formatNumber(getPrevData('total_deposit').prev) : '-' }}
+                                <span v-if="bubbleKey === 'total_deposit'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_deposit') && getPrevData('total_deposit').diff) }}</span>
+                            </span>
+                        </span>
+                        <span class="sub-input">
+                            <span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span>
+                            <span v-if="showPrevData" class="prev-value" @click="toggleBubble('total_debt')">
+                                上次：{{ getPrevData('total_debt') && getPrevData('total_debt').prev !== null ? formatNumber(getPrevData('total_debt').prev) : '-' }}
+                                <span v-if="bubbleKey === 'total_debt'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_debt') && getPrevData('total_debt').diff) }}</span>
+                            </span>
+                        </span>
                     </div>
                 </div>
             </template>
@@ -169,6 +194,10 @@
                                 <span class="sub-input" style="flex:1;">
                                     <span class="label-small">存款</span>
                                     <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
+                                    <span v-if="showPrevData" class="prev-value" @click="toggleBubble('deposit_'+f.key)">
+                                        上次：{{ getPrevData('deposit_'+f.key) && getPrevData('deposit_'+f.key).prev !== null ? formatNumber(getPrevData('deposit_'+f.key).prev) : '-' }}
+                                        <span v-if="bubbleKey === 'deposit_'+f.key" class="diff-bubble">差额 {{ formatSigned(getPrevData('deposit_'+f.key) && getPrevData('deposit_'+f.key).diff) }}</span>
+                                    </span>
                                 </span>
                             </template>
                         </template>
@@ -184,6 +213,10 @@
                                 <span class="sub-input" style="flex:1;">
                                     <span class="label-small">负债</span>
                                     <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
+                                    <span v-if="showPrevData" class="prev-value" @click="toggleBubble('debt_'+f.key)">
+                                        上次：{{ getPrevData('debt_'+f.key) && getPrevData('debt_'+f.key).prev !== null ? formatNumber(getPrevData('debt_'+f.key).prev) : '-' }}
+                                        <span v-if="bubbleKey === 'debt_'+f.key" class="diff-bubble">差额 {{ formatSigned(getPrevData('debt_'+f.key) && getPrevData('debt_'+f.key).diff) }}</span>
+                                    </span>
                                 </span>
                             </template>
                         </template>

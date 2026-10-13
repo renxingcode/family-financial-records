@@ -244,6 +244,11 @@ const app = createApp({
         const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
         const editIndex = ref(-1);
         const form = ref({});
+        // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录；对比开关首版默认开（后续持久化到 UI 偏好）
+        const prevRecord = ref(null);
+        const showPrevData = ref(false);
+        // 差额气泡：当前点击的“上次”对比项 key（再点关闭）
+        const bubbleKey = ref('');
         const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
 
         // 银行卡管理
@@ -341,6 +346,62 @@ const app = createApp({
             if (val !== 0) return val;
             if (!f.category.includes(type)) return null;
             return 0;
+        }
+
+        /**
+         * 详情「对比上次」：返回某对比项的上次值与差额
+         * @param {string} key 'total_balance'/'total_deposit'/'total_debt' 或 'deposit_{卡key}'/'debt_{卡key}'
+         * @returns {{prev:(number|null), diff:(number|null)}|null} 开关关/非查看态/无上次记录时返回 null；
+         *          上次无该字段时 prev/diff 均为 null
+         */
+        function getPrevData(key) {
+            if (!showPrevData.value) return null;
+            if (modalMode.value !== 'edit' || editable.value) return null;
+            if (!prevRecord.value) return null;
+            const curForm = form.value;
+            const prevForm = prevRecord.value;
+            let cur, prev;
+            if (key === 'total_balance') {
+                cur = getBalance(curForm);
+                prev = getBalance(prevForm);
+            } else if (key === 'total_deposit') {
+                cur = getTotalDeposit(curForm);
+                prev = getTotalDeposit(prevForm);
+            } else if (key === 'total_debt') {
+                cur = getTotalDebt(curForm);
+                prev = getTotalDebt(prevForm);
+            } else {
+                const m = key.match(/^(deposit|debt)_(.+)$/);
+                if (!m) return null;
+                const field = m[2] + '_' + m[1];
+                cur = Number(curForm[field]) || 0;
+                if (!(field in prevForm)) return { prev: null, diff: null };
+                prev = Number(prevForm[field]) || 0;
+            }
+            return { prev: prev, diff: cur - prev };
+        }
+
+        /**
+         * 切换差额气泡：点哪个“上次”项显示其差额，再点关闭
+         */
+        function toggleBubble(key) {
+            bubbleKey.value = bubbleKey.value === key ? '' : key;
+        }
+
+        /**
+         * 上次记录的日期（日期旁展示，不可点击）
+         */
+        const prevDateText = computed(() => {
+            if (!prevRecord.value) return '';
+            return formatDateToDot(prevRecord.value.date);
+        });
+
+        /**
+         * 差额带正负号格式化（正数补 +，0 显示 0）
+         */
+        function formatSigned(num) {
+            if (num === null || num === undefined || isNaN(num)) return '';
+            return (num > 0 ? '+' : '') + formatNumber(num);
         }
 
         // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
@@ -844,6 +905,7 @@ const app = createApp({
             isCopy.value = false;
             form.value = getDefaultForm();
             showRemark.value = false;
+            prevRecord.value = null;
             modalVisible.value = true;
         }
 
@@ -857,6 +919,11 @@ const app = createApp({
             isCopy.value = false;
             form.value = {...records.value[realIdx]};
             showRemark.value = !!form.value.remark; // 有备注默认展开
+            // 上一条（日期更早的相邻）记录，供详情逐卡对比上次金额/差额
+            const sorted = sortedRecords.value;
+            const sIdx = sorted.findIndex(r => r.date === item.date);
+            prevRecord.value = (sIdx !== -1 && sIdx + 1 < sorted.length) ? sorted[sIdx + 1] : null;
+            bubbleKey.value = '';
             modalVisible.value = true;
         }
 
@@ -932,6 +999,7 @@ const app = createApp({
         // 复制当前记录：保留所有数据，日期设为今天，进入添加模式
         function copyRecord() {
             const data = {...form.value};
+            prevRecord.value = null;
             modalVisible.value = false;
             setTimeout(() => {
                 modalMode.value = 'add';
@@ -1325,6 +1393,8 @@ const app = createApp({
             form,
             showRemark,
             displayFields,
+            showPrevData,
+            bubbleKey,
             allConfigs,
             activeCards,
             editableFields,
@@ -1341,6 +1411,10 @@ const app = createApp({
             getTotalDeposit,
             getTotalDebt,
             getBalance,
+            getPrevData,
+            toggleBubble,
+            prevDateText,
+            formatSigned,
             getDeletedDepositTotal,
             getDeletedDebtTotal,
             hasDeletedFields,
