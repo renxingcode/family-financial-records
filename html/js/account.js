@@ -14,11 +14,13 @@ const VERSION_NUMBER = 1.0;
  * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
  * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
  * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, annualExpense, targetDate, targetRemark, ... }>，targetAmount 实时计算不存储）
+ * UI_PREFS: 界面偏好（Object<{ showPrevData, showRemark, targetReminderExpanded }>，记忆开关展开状态）
  */
 var STORAGE_KEYS = {
     RECORDS: 'financial_account_records',
     BANK_CARD_CONFIGS: 'financial_account_bank_card_configs',
-    TARGET: 'financial_account_target'
+    TARGET: 'financial_account_target',
+    UI_PREFS: 'financial_account_ui_prefs'
 };
 
 function loadConfig() {
@@ -35,6 +37,42 @@ function loadConfig() {
 
 function saveConfig(config) {
     localStorage.setItem(STORAGE_KEYS.BANK_CARD_CONFIGS, JSON.stringify(config));
+}
+
+/**
+ * DEFAULT_UI_PREFS: 界面偏好默认值
+ * 新增偏好字段时在这里补默认，保证旧数据缺字段也能正常读取。
+ */
+var DEFAULT_UI_PREFS = {
+    showPrevData: false,
+    showRemark: true,
+    targetReminderExpanded: false
+};
+
+/**
+ * 读取界面偏好（合并默认值，字段缺失自动补默认）
+ * @returns {Object} 界面偏好对象
+ */
+function loadUiPrefs() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.UI_PREFS);
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data && typeof data === 'object') {
+                return Object.assign({}, DEFAULT_UI_PREFS, data);
+            }
+        }
+    } catch (_) {
+    }
+    return Object.assign({}, DEFAULT_UI_PREFS);
+}
+
+/**
+ * 保存界面偏好
+ * @param {Object} prefs 界面偏好对象
+ */
+function saveUiPrefs(prefs) {
+    localStorage.setItem(STORAGE_KEYS.UI_PREFS, JSON.stringify(prefs));
 }
 
 function generateKey() {
@@ -244,12 +282,13 @@ const app = createApp({
         const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
         const editIndex = ref(-1);
         const form = ref({});
-        // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录；对比开关首版默认开（后续持久化到 UI 偏好）
+        // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录
         const prevRecord = ref(null);
-        const showPrevData = ref(false);
+        const uiPrefs = loadUiPrefs();
+        const showPrevData = ref(uiPrefs.showPrevData === true);
         // 差额气泡：当前点击的“上次”对比项 key（再点关闭）
         const bubbleKey = ref('');
-        const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
+        const showRemark = ref(uiPrefs.showRemark === true);  // 备注输入框是否展开（编辑态，按上次偏好）
 
         // 银行卡管理
         const bankManagerVisible = ref(false);
@@ -267,7 +306,7 @@ const app = createApp({
         // 目标
         const targetModalVisible = ref(false);
         const targetEditable = ref(false);
-        const targetReminderExpanded = ref(false);
+        const targetReminderExpanded = ref(uiPrefs.targetReminderExpanded === true);
         const targetForm = ref({
             annualIncome: '',
             incomeRemark: '',
@@ -904,7 +943,7 @@ const app = createApp({
             editIndex.value = -1;
             isCopy.value = false;
             form.value = getDefaultForm();
-            showRemark.value = false;
+            showRemark.value = loadUiPrefs().showRemark === true;
             prevRecord.value = null;
             modalVisible.value = true;
         }
@@ -918,7 +957,7 @@ const app = createApp({
             editIndex.value = realIdx;
             isCopy.value = false;
             form.value = {...records.value[realIdx]};
-            showRemark.value = !!form.value.remark; // 有备注默认展开
+            showRemark.value = loadUiPrefs().showRemark === true; // 按上次偏好（展开/收起）
             // 上一条（日期更早的相邻）记录，供详情逐卡对比上次金额/差额
             const sorted = sortedRecords.value;
             const sIdx = sorted.findIndex(r => r.date === item.date);
@@ -1012,7 +1051,7 @@ const app = createApp({
                 data.date = `${y}-${m}-${d}`;
                 form.value = data;
                 editable.value = true;
-                showRemark.value = false;
+                showRemark.value = loadUiPrefs().showRemark === true;
                 modalVisible.value = true;
             }, 100);
         }
@@ -1256,6 +1295,7 @@ const app = createApp({
                 localStorage.removeItem(STORAGE_KEYS.RECORDS);
                 localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
                 localStorage.removeItem(STORAGE_KEYS.TARGET);
+                localStorage.removeItem(STORAGE_KEYS.UI_PREFS);
                 location.reload();
             }
         }
@@ -1370,6 +1410,14 @@ const app = createApp({
                     bankFormModified.value = true;
                 }
             }, {deep: true});
+            // 界面偏好持久化：对比上次、目标提醒展开状态变化即保存
+            watch([showPrevData, showRemark, targetReminderExpanded], () => {
+                saveUiPrefs({
+                    showPrevData: showPrevData.value,
+                    showRemark: showRemark.value,
+                    targetReminderExpanded: targetReminderExpanded.value
+                });
+            });
             // 编辑态刷新/关闭页面时拦截，防止未保存输入丢失
             // 纯浏览态（查看记录、银行卡列表）不拦截，刷新不会丢数据
             window.addEventListener('beforeunload', function (e) {
