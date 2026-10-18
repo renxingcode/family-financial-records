@@ -138,7 +138,7 @@
                 <label>【日期】</label>
                 <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
                 <span v-else>{{ formatDateToDot(form.date) }}</span>
-                <span v-if="showPrevData" class="prev-date">上次日期：{{ prevDateText }}</span>
+                <span v-if="showPrevData && modalMode === 'edit' && !editable" class="prev-date">上次日期：{{ prevDateText || '-' }}</span>
             </div>
             <!-- 查看态汇总 -->
             <template v-if="modalMode === 'edit' && !editable">

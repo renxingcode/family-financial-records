@@ -627,10 +627,10 @@ const app = createApp({
 
                 const targetRows = [
                     ['每年收入', targetData.annualIncome || ''],
-                    ['每年收入说明', targetData.incomeRemark || ''],
+                    ['收入说明', targetData.incomeRemark || ''],
                     ['每年支出', targetData.annualExpense || ''],
-                    ['每年支出说明', targetData.expenseRemark || ''],
-                    ['目标日期', targetData.targetDate || ''],
+                    ['支出说明', targetData.expenseRemark || ''],
+                    ['目标日期', formatDateToDot(targetData.targetDate || '')],
                     ['目标金额', targetAmount],
                     ['目标说明', targetData.targetRemark || ''],
                     ['当前总余额', currentBalance],
@@ -669,7 +669,7 @@ const app = createApp({
                 const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
                 const diff = prev ? getBalance(item) - getBalance(prev) : null;
                 const row = [
-                    item.date,
+                    formatDateToDot(item.date),
                     getBalance(item),
                     diff !== null ? diff : '-',
                     getTotalDeposit(item),
@@ -715,17 +715,18 @@ const app = createApp({
         }
 
         function exportJSON() {
-            if (records.value.length === 0 && configs.value.length === 0) {
-                showToast('暂无数据');
-                return;
-            }
-
             // 读取目标数据
             let targetData = null;
             try {
                 const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
                 if (raw) targetData = JSON.parse(raw);
             } catch (_) {
+            }
+
+            // 仅目标有数据时也可导出；records/config/target 三者都为空的时候才提示
+            if (records.value.length === 0 && configs.value.length === 0 && !targetData) {
+                showToast('暂无数据可导出');
+                return;
             }
 
             // 按日期降序排列
@@ -842,9 +843,10 @@ const app = createApp({
                     configs.value = data.config;
                     saveConfig(configs.value);
                 }
-                // 合并目标：有则直接覆盖
+                // 合并目标：有则直接覆盖，并同步到目标表单
                 if (data.target) {
                     localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    targetForm.value = {...targetForm.value, ...data.target};
                 }
                 showToast(`✅ 合并导入完成：新增 ${addedCount} 条，更新 ${updatedCount} 条`);
             } else {
@@ -860,8 +862,14 @@ const app = createApp({
                 saveData();
                 if (data.target) {
                     localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    targetForm.value = {...targetForm.value, ...data.target};
                 } else {
                     localStorage.removeItem(STORAGE_KEYS.TARGET);
+                    targetForm.value = {
+                        annualIncome: '', incomeRemark: '', annualExpense: '', expenseRemark: '',
+                        targetAmount: 0, targetDate: '', targetRemark: '',
+                        currentBalance: 0, remaining: 0, targetDateDisplay: '', targetDuration: ''
+                    };
                 }
                 showToast(`✅ 覆盖导入完成：已导入 ${records.value.length} 条记录`);
             }
@@ -934,8 +942,10 @@ const app = createApp({
 
         // 记录操作
         function openAddModal() {
-            if (configs.value.length === 0) {
-                showToast('⚠️ 请先添加银行卡');
+            // 没有可用的（未禁用、未删除）银行卡时，无法填写任何金额
+            const availableCards = configs.value.filter(c => !c.disabled && !c.isDeleted);
+            if (availableCards.length === 0) {
+                showToast('⚠️ 请先配置银行卡（点击「银行卡管理」添加或启用）');
                 return;
             }
             modalMode.value = 'add';
@@ -1033,6 +1043,13 @@ const app = createApp({
             }
             saveData();
             modalVisible.value = false;
+            // add 模式：新记录按日期排最前，回到第一页便于查看
+            // edit 模式：保留当前页，仅当当前页越界时修正到最后一页
+            if (modalMode.value === 'add') {
+                currentPage.value = 1;
+            } else if (currentPage.value > totalPages.value) {
+                currentPage.value = totalPages.value;
+            }
         }
 
         // 复制当前记录：保留所有数据，日期设为今天，进入添加模式
@@ -1423,7 +1440,8 @@ const app = createApp({
             window.addEventListener('beforeunload', function (e) {
                 const recordEditing = modalVisible.value
                     && (modalMode.value === 'add' || (modalMode.value === 'edit' && editable.value));
-                const editing = recordEditing || bankFormVisible.value;
+                const targetEditing = targetModalVisible.value && targetEditable.value;
+                const editing = recordEditing || bankFormVisible.value || targetEditing;
                 if (editing) {
                     e.preventDefault();
                     e.returnValue = '';
@@ -1517,6 +1535,7 @@ const app = createApp({
             importJSON,
             importModalVisible,
             importStats,
+            importData,
             cancelImport,
             doImport,
 
