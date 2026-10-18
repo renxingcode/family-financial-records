@@ -276,8 +276,9 @@
                     <button class="btn-confirm" @click="saveRecord">保存修改</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
-                <!-- 添加态：只有保存 -->
+                <!-- 添加态：只有保存；复制态额外提供返回，回到来源记录 -->
                 <template v-if="modalMode === 'add'">
+                    <button v-if="isCopy" class="btn-cancel" @click="cancelCopy">返回</button>
                     <button class="btn-confirm" @click="saveRecord">保存</button>
                 </template>
             </div>
@@ -524,6 +525,14 @@
                     <label><input type="checkbox" v-model="bankForm.category" value="deposit" /> 存款</label>
                     <label><input type="checkbox" v-model="bankForm.category" value="debt" /> 负债</label>
                     <span class="type-hint">（至少选一项）</span>
+                </div>
+            </div>
+
+            <!-- 取消类型警告：历史数据不丢失，但后续新增记录无法填写该类型 -->
+            <div class="form-group form-row" v-if="bankFormMode === 'edit' && bankForm.originalCategory && bankForm.originalCategory.some(type => !bankForm.category.includes(type))">
+                <label></label>
+                <div class="type-removed-warning">
+                    <strong>⚠️ 提醒：</strong>您取消了部分类型，历史数据不会丢失，仍然会正常显示；但后续新增记录将无法填写该类型。
                 </div>
             </div>
 

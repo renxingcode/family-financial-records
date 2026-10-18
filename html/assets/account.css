@@ -1101,6 +1101,19 @@ body {
     color: red;
 }
 
+/* 取消类型警告 */
+.type-removed-warning {
+    background-color: #fff0f0;
+    border: 2px solid #e74c3c;
+    padding: 6px;
+    border-radius: 6px;
+    color: #c0392b;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 160%;
+    flex: 1;
+}
+
 .category-checkbox-group {
     display: flex;
     gap: 6px;

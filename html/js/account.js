@@ -280,6 +280,7 @@ const app = createApp({
         const modalMode = ref('add');   // 'add' | 'edit'
         const editable = ref(false);    // 编辑态（true）还是查看态（false）
         const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
+        let copySourceIndex = -1;       // 复制来源记录下标（返回时回到原记录查看态）
         const editIndex = ref(-1);
         const form = ref({});
         // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录
@@ -296,7 +297,9 @@ const app = createApp({
         const bankFormMode = ref('add');  // 'add' | 'edit'
         const bankForm = ref({key: '', label: '', category: ['deposit', 'debt'], showInList: true});
         const editingCardKey = ref('');
-        const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
+        // 弹窗打开时的表单快照（JSON），关闭时据此判断是否有未保存修改
+        let formSnapshot = '';
+        let targetSnapshot = '';
 
         // 回收站
         const recycleBinVisible = ref(false);
@@ -952,7 +955,9 @@ const app = createApp({
             editable.value = true;
             editIndex.value = -1;
             isCopy.value = false;
+            copySourceIndex = -1;
             form.value = getDefaultForm();
+            formSnapshot = JSON.stringify(form.value);
             showRemark.value = loadUiPrefs().showRemark === true;
             prevRecord.value = null;
             modalVisible.value = true;
@@ -967,6 +972,7 @@ const app = createApp({
             editIndex.value = realIdx;
             isCopy.value = false;
             form.value = {...records.value[realIdx]};
+            formSnapshot = JSON.stringify(form.value);
             showRemark.value = loadUiPrefs().showRemark === true; // 按上次偏好（展开/收起）
             // 上一条（日期更早的相邻）记录，供详情逐卡对比上次金额/差额
             const sorted = sortedRecords.value;
@@ -978,7 +984,7 @@ const app = createApp({
 
         // 取消编辑：恢复原始数据，退出编辑态
         function cancelEdit() {
-            if (editable.value) {
+            if (editable.value && JSON.stringify(form.value) !== formSnapshot) {
                 if (!confirm('您有未保存的修改，确定要返回吗？')) return;
             }
             const idx = editIndex.value;
@@ -1055,6 +1061,7 @@ const app = createApp({
         // 复制当前记录：保留所有数据，日期设为今天，进入添加模式
         function copyRecord() {
             const data = {...form.value};
+            copySourceIndex = editIndex.value;
             prevRecord.value = null;
             modalVisible.value = false;
             setTimeout(() => {
@@ -1067,10 +1074,24 @@ const app = createApp({
                 const d = String(today.getDate()).padStart(2, '0');
                 data.date = `${y}-${m}-${d}`;
                 form.value = data;
+                formSnapshot = JSON.stringify(form.value);
                 editable.value = true;
                 showRemark.value = loadUiPrefs().showRemark === true;
                 modalVisible.value = true;
             }, 100);
+        }
+
+        // 取消复制：回到来源记录的查看态（有修改先确认）
+        function cancelCopy() {
+            if (isCopy.value && JSON.stringify(form.value) !== formSnapshot) {
+                if (!confirm('您有未保存的修改，确定要返回吗？')) return;
+            }
+            if (copySourceIndex >= 0 && copySourceIndex < records.value.length) {
+                // 复用查看态打开逻辑：同步重建上一条对比、气泡状态与表单快照
+                openEditModal(records.value[copySourceIndex]);
+            } else {
+                modalVisible.value = false;
+            }
         }
 
         function deleteRecord() {
@@ -1084,23 +1105,13 @@ const app = createApp({
             }
         }
 
-        // 关闭记录弹窗前确认未保存的修改
+        // 关闭记录弹窗前确认未保存的修改（仅当内容相对打开时快照有变化才提示）
         function confirmClose() {
             let needConfirm = false;
-            if (modalMode.value === 'add') {
-                // 检查是否有填写内容（日期、金额、备注）
-                const f = form.value;
-                const hasDate = !!f.date;
-                let hasAmount = false;
-                Object.keys(f).forEach(k => {
-                    if (k !== 'date' && k !== 'remark' && Number(f[k]) !== 0) hasAmount = true;
-                });
-                const hasRemark = !!f.remark;
-                if (hasDate || hasAmount || hasRemark) {
+            if (modalMode.value === 'add' || (modalMode.value === 'edit' && editable.value)) {
+                if (JSON.stringify(form.value) !== formSnapshot) {
                     needConfirm = true;
                 }
-            } else if (modalMode.value === 'edit' && editable.value) {
-                needConfirm = true;
             }
             if (needConfirm) {
                 if (confirm('您有未保存的修改，确定要关闭吗？')) {
@@ -1120,7 +1131,6 @@ const app = createApp({
             bankFormMode.value = 'add';
             bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true, remark: ''};
             editingCardKey.value = '';
-            bankFormModified.value = false;
             bankFormVisible.value = true;
         }
 
@@ -1128,7 +1138,6 @@ const app = createApp({
             bankFormMode.value = 'edit';
             bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || '', originalCategory: [...card.category]};
             editingCardKey.value = card.key;
-            bankFormModified.value = false;
             bankFormVisible.value = true;
         }
 
@@ -1185,7 +1194,6 @@ const app = createApp({
                 showToast('✅ 银行卡已更新');
             }
             saveConfig(configs.value);
-            bankFormModified.value = false;
             bankFormVisible.value = false;
         }
 
@@ -1296,14 +1304,46 @@ const app = createApp({
             showToast(`✅ 已彻底删除「${result.label}」，其历史数据共 ${result.removedCount} 条已清除`);
         }
 
-        // 关闭银行卡表单弹窗，有未保存修改时先确认
+        // 关闭银行卡表单弹窗：仅当内容相对原配置有变化才提示
         function closeBankCardForm() {
-            if (bankFormModified.value) {
+            let isDirty = false;
+
+            if (bankFormMode.value === 'edit') {
+                const orig = bankForm.value.originalCategory || [];
+                const current = bankForm.value.category || [];
+                // 类型是否有变化
+                if (orig.length !== current.length || orig.some(t => current.indexOf(t) === -1)) {
+                    isDirty = true;
+                }
+                const card = configs.value.find(c => c.key === editingCardKey.value);
+                // 名称是否有变化
+                if (card && bankForm.value.label.trim() !== card.label) {
+                    isDirty = true;
+                }
+                // 备注是否有变化
+                if (card && (bankForm.value.remark || '') !== (card.remark || '')) {
+                    isDirty = true;
+                }
+                // 列表显示状态是否有变化
+                if (card && bankForm.value.showInList !== (card.showInList !== false)) {
+                    isDirty = true;
+                }
+            }
+
+            if (bankFormMode.value === 'add') {
+                // 添加模式：填了名称或备注才算有内容
+                if (bankForm.value.label.trim() !== '' || bankForm.value.remark.trim() !== '') {
+                    isDirty = true;
+                }
+            }
+
+            if (isDirty) {
                 if (!confirm('您有未保存的修改，确定要关闭吗？')) {
                     return;
                 }
             }
             bankFormVisible.value = false;
+            bankForm.value.originalCategory = [];
         }
 
         // 清空所有数据，谨慎操作！二次确认防误触
@@ -1337,11 +1377,13 @@ const app = createApp({
             targetForm.value.currentBalance = latest ? getBalance(latest) : 0;
             targetCalculated.value = false;
             targetEditable.value = false;
+            targetSnapshot = JSON.stringify(targetForm.value);
             targetModalVisible.value = true;
         }
 
         function closeTargetModal() {
-            if (targetEditable.value) {
+            // 编辑态且内容相对打开时快照有变化才提示
+            if (targetEditable.value && JSON.stringify(targetForm.value) !== targetSnapshot) {
                 if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
             }
             targetModalVisible.value = false;
@@ -1396,7 +1438,7 @@ const app = createApp({
          * 取消目标编辑：放弃修改，重载已保存数据
          */
         function cancelTargetEdit() {
-            if (targetEditable.value) {
+            if (targetEditable.value && JSON.stringify(targetForm.value) !== targetSnapshot) {
                 if (!confirm('您有未保存的修改，确定要返回吗？')) return;
             }
             try {
@@ -1409,7 +1451,6 @@ const app = createApp({
             }
             targetEditable.value = false;
             targetCalculated.value = false;
-            showToast('已返回详情');
         }
 
         /**
@@ -1421,12 +1462,6 @@ const app = createApp({
 
         onMounted(() => {
             loadData();
-            // 监听银行卡表单内容变化，标记未保存状态
-            watch(bankForm, () => {
-                if (bankFormVisible.value) {
-                    bankFormModified.value = true;
-                }
-            }, {deep: true});
             // 界面偏好持久化：对比上次、目标提醒展开状态变化即保存
             watch([showPrevData, showRemark, targetReminderExpanded], () => {
                 saveUiPrefs({
@@ -1496,6 +1531,7 @@ const app = createApp({
             saveRecord,
             deleteRecord,
             copyRecord,
+            cancelCopy,
             filterNumber,
             refreshData,
 
