@@ -357,6 +357,23 @@ body {
     color: #999;
 }
 
+.pagination .page-jump {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #666;
+}
+
+.pagination .page-jump-input {
+    width: 48px;
+    padding: 4px 6px;
+    border: 1px solid #d0d5dd;
+    border-radius: 6px;
+    font-size: 13px;
+    text-align: center;
+}
+
 /* Modal */
 .modal-overlay {
     position: fixed;

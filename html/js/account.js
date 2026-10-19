@@ -269,6 +269,7 @@ const app = createApp({
 
         // 响应式：分页
         const currentPage = ref(1);         // 当前页码
+        const jumpPage = ref(1);            // 分页跳转输入框页码
         const pageSize = 10;                // 每页显示记录数
 
         // Toast
@@ -583,10 +584,24 @@ const app = createApp({
 
         function prevPage() {
             if (currentPage.value > 1) currentPage.value--;
+            jumpPage.value = currentPage.value;
         }
 
         function nextPage() {
             if (currentPage.value < totalPages.value) currentPage.value++;
+            jumpPage.value = currentPage.value;
+        }
+
+        // 跳转到指定页
+        function goToPage() {
+            const p = Number(jumpPage.value);
+            if (isNaN(p) || p < 1 || p > totalPages.value) {
+                showToast('请输入 1~' + totalPages.value + ' 之间的页码');
+                jumpPage.value = currentPage.value;
+                return;
+            }
+            currentPage.value = p;
+            jumpPage.value = p;
         }
 
         // 全屏
@@ -1589,6 +1604,8 @@ const app = createApp({
             paginatedRecords,
             prevPage,
             nextPage,
+            jumpPage,
+            goToPage,
 
             // 导出和导入
             exportCSV,

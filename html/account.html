@@ -103,6 +103,11 @@
         <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
         <span class="page-count">共 {{ records.length }} 条</span>
         <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
+        <span class="page-jump">跳转到第
+            <input v-model.number="jumpPage" type="number" min="1" :max="totalPages" class="page-jump-input" />
+            页
+            <button class="page-jump-btn" @click="goToPage">Go</button>
+        </span>
     </div>
 
     <!-- 添加/编辑弹窗 -->
