@@ -25,7 +25,7 @@
         <button class="btn-export" @click="openExportModal">📤 导出</button>
         <button class="btn-import" @click="triggerImport">📥 导入</button>
         <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
-        <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
+        <!-- <button class="btn-clear" @click="clearData">🗑 清空数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
 
@@ -54,7 +54,7 @@
             </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
                 <!-- 日期（上：年份 / 下：月.日） -->
-                <td class="clickable-date" @click="openEditModal(item, idx)">
+                <td class="clickable-date" @click="openEditModal(item)">
                     <div class="cell-flex">
                         <span class="line1">{{ item.date.slice(0, 4) }}</span>
                         <span class="line2">{{ item.date.slice(5, 7) + '.' + item.date.slice(8, 10) }}</span>
@@ -67,8 +67,8 @@
                             {{ formatNumber(getBalance(item)) }}
                         </span>
                         <span class="line2"
-                              :style="getDiff(item, idx) !== null ? { color: getDiff(item, idx) < 0 ? 'orange' : '#666' } : {}">
-                            {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
+                              :style="getDiff(item) !== null ? { color: getDiff(item) < 0 ? 'orange' : '#666' } : {}">
+                            {{ getDiff(item) !== null ? formatNumber(getDiff(item)) : '-' }}
                         </span>
                     </div>
                 </td>
@@ -298,7 +298,7 @@
                 <label>每年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
-                    {{ formatNumber(targetForm.annualIncome) || '-' }}
+                    {{ targetForm.annualIncome ? formatNumber(targetForm.annualIncome) + ' 元' : '-' }}
                     <span v-if="targetForm.annualIncome > 0" class="text-darkred fs-12">(平均每月 {{ formatNumber((targetForm.annualIncome / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
@@ -314,7 +314,7 @@
                 <label>每年支出: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
-                    {{ formatNumber(targetForm.annualExpense) || '-' }}
+                    {{ targetForm.annualExpense ? formatNumber(targetForm.annualExpense) + ' 元' : '-' }}
                     <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
@@ -364,7 +364,7 @@
             <!-- 当前总余额 + 计算按钮 -->
             <div class="form-group form-row">
                 <label>当前总余额: </label>
-                <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }}</span>
+                <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }} 元</span>
                 <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 

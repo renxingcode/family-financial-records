@@ -523,10 +523,9 @@ const app = createApp({
          * 计算某条记录与上一条记录的余额差额（对比差额）
          * 上一条指的是"日期更早"的那条记录（因为 sortedRecords 按日期降序排列）
          * @param {Object} item - 当前记录
-         * @param {number} idxInPage - 当前页中的索引
          * @returns {number|null} 差额（当前余额 - 上一条余额），如果没有上一条则返回 null
          */
-        function getDiff(item, idxInPage) {
+        function getDiff(item) {
             const realIdx = sortedRecords.value.indexOf(item);
             if (realIdx === -1 || realIdx + 1 >= sortedRecords.value.length) return null;
             const prev = sortedRecords.value[realIdx + 1];
@@ -625,22 +624,48 @@ const app = createApp({
                 const currentBalance = latest ? getBalance(latest) : 0;
                 // 目标金额实时计算（每年支出 ÷ 12 × 剩余月数）
                 const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
-                // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
+                // 距离目标剩余金额、预计达成日期：现场重算（与页面「开始计算」逻辑一致）
                 const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
+                // 目标日期到今天的剩余月数（用于目标金额公式、每月最低收入）
+                const months = calcMonths(targetData.targetDate);
+                const remaining = targetCalc.remaining;
 
                 const targetRows = [
-                    ['每年收入', targetData.annualIncome || ''],
+                    ['【目标计划】'],
+                    ['每年收入', (targetData.annualIncome ? formatNumber(targetData.annualIncome) + ' 元' : ''),
+                        (targetData.annualIncome > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualIncome / 12)) + ' 元)' : '')],
                     ['收入说明', targetData.incomeRemark || ''],
-                    ['每年支出', targetData.annualExpense || ''],
+                    ['每年支出', (targetData.annualExpense ? formatNumber(targetData.annualExpense) + ' 元' : ''),
+                        (targetData.annualExpense > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualExpense / 12)) + ' 元)' : '')],
                     ['支出说明', targetData.expenseRemark || ''],
-                    ['目标日期', formatDateToDot(targetData.targetDate || '')],
-                    ['目标金额', targetAmount],
+                    ['目标日期', formatDateToDot(targetData.targetDate || ''),
+                        (months > 0 ? '（' + formatDuration(months) + '）' : '')],
+                    ['目标金额', (targetAmount > 0 ? formatNumber(targetAmount) + ' 元' : ''),
+                        (targetData.annualExpense && months > 0 ? '(' + formatNumber(targetData.annualExpense) + ' ÷ 12 × ' + months + ' 个月)' : '')],
                     ['目标说明', targetData.targetRemark || ''],
-                    ['当前总余额', currentBalance],
-                    ['剩余金额', targetCalc.remaining],
-                    ['预计达成日期', targetCalc.targetDateDisplay],
-                    ['剩余时间', targetCalc.targetDuration]
+                    ['当前总余额', formatNumber(currentBalance) + ' 元'],
                 ];
+
+                // 距离目标剩余金额和截止日期（仅当收入和目标金额有效时显示）
+                if (targetData.annualIncome > 0 && targetAmount > 0) {
+                    targetRows.push(['（距离目标剩余金额和截止日期）', '按照当前收入和支出水平不变，不需要奋斗到目标日期，提前到什么时候可以达成目标？']);
+                    targetRows.push(['距离目标剩余金额', formatNumber(remaining) + ' 元',
+                        '(目标金额 ' + formatNumber(targetAmount) + ' - 当前余额 ' + formatNumber(currentBalance) + ')']);
+                    targetRows.push(['剩余金额截止日期', targetCalc.targetDateDisplay,
+                        (targetCalc.targetDuration ? '(还剩 ' + targetCalc.targetDuration + ')' : ''),
+                        '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 每年收入 ' + formatNumber(targetData.annualIncome) + ')']);
+                }
+
+                // 距离目标日期每月最低收入（仅当剩余金额 > 0 且剩余月数 > 0 时显示）
+                if (remaining > 0 && months > 0) {
+                    const monthlyMin = Math.round(remaining / months);
+                    const yearlyMin = Math.round(remaining / months * 12);
+                    targetRows.push(['（距离目标日期每月最低收入）', '一直奋斗到目标日期，每个月收入不能低于多少钱？']);
+                    targetRows.push(['每月最低收入', formatNumber(monthlyMin) + ' 元']);
+                    targetRows.push(['每年最低收入(每月×12)', formatNumber(yearlyMin) + ' 元',
+                        '从现在 到 ' + formatDateToDot(targetData.targetDate || '') + '，还剩下 ' + months + ' 个月',
+                        '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 剩余总月份 ' + months + ' 个月)']);
+                }
 
                 targetRows.forEach(row => {
                     const escaped = row.map(val => {
@@ -656,7 +681,8 @@ const app = createApp({
                 csv += '\n';
             }
 
-            // 2. 构建表头
+            // 2. 数据记录分区标题 + 表头
+            csv += '【数据记录】\n';
             const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
             configs.value.filter(f => !f.isDeleted).forEach(f => {
                 if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
@@ -963,7 +989,7 @@ const app = createApp({
             modalVisible.value = true;
         }
 
-        function openEditModal(item, idx) {
+        function openEditModal(item) {
             if (!item) return;
             const realIdx = records.value.findIndex(r => r.date === item.date);
             if (realIdx === -1) return;
@@ -1346,15 +1372,19 @@ const app = createApp({
             bankForm.value.originalCategory = [];
         }
 
-        // 清空所有数据，谨慎操作！二次确认防误触
+        // 清空所有数据，谨慎操作！二次确认 + 输入指定文字防误触
         function clearData() {
-            if (confirm('确认清空所有数据？此操作不可恢复！')) {
-                localStorage.removeItem(STORAGE_KEYS.RECORDS);
-                localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
-                localStorage.removeItem(STORAGE_KEYS.TARGET);
-                localStorage.removeItem(STORAGE_KEYS.UI_PREFS);
-                location.reload();
+            if (!confirm('确认清空所有数据？此操作不可恢复！')) return;
+            const userInput = prompt('请键入「确认清空所有数据」以确认清空：');
+            if (userInput !== '确认清空所有数据') {
+                showToast('❌ 输入错误，取消清空');
+                return;
             }
+            localStorage.removeItem(STORAGE_KEYS.RECORDS);
+            localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+            localStorage.removeItem(STORAGE_KEYS.TARGET);
+            localStorage.removeItem(STORAGE_KEYS.UI_PREFS);
+            location.reload();
         }
 
         // 目标计划
