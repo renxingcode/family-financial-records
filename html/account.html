@@ -90,8 +90,10 @@
                         </span>
                     </div>
                 </td>
-                <!-- 备注列 - 最多2行截断 -->
-                <td class="remark-cell">{{ item.remark || '-' }}</td>
+                <!-- 备注列 -->
+                <td>
+                    <div class="cell-flex remark-ellipsis">{{ item.remark || '-' }}</div>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -123,7 +125,7 @@
                     </template>
                 </span>
                 <label v-if="modalMode === 'edit' && !editable" class="detail-diff-switch">
-                    <input type="checkbox" v-model="showPrevData" /> 对比上次
+                    <input type="checkbox" :checked="showPrevData" @change="toggleShowPrev" /> 对比上次
                 </label>
                 <button class="close-btn" @click="confirmClose">✕</button>
             </div>
@@ -185,7 +187,13 @@
             <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
                 <div class="form-group form-row" v-if="shouldShowFieldInModal(f)">
-                    <label>{{ f.label }}</label>
+                    <label>{{ f.label }}: </label>
+                    <!-- 对比上次：卡名与明细行间的花括号 -->
+                    <svg v-if="showPrevData && modalMode === 'edit' && !editable"
+                         class="card-brace" viewBox="0 0 24 36" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M22 0 C16 0 12 4 12 10 C12 14 10 16 6 18 C10 20 12 22 12 26 C12 32 16 36 22 36"
+                              fill="none" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                    </svg>
                     <div class="field-wrapper">
                         <!-- 存款：add 模式严格按配置；edit/view 模式含非零历史数据 -->
                         <template v-if="shouldShowTypeField(f, 'deposit')">
@@ -249,21 +257,20 @@
             </template>
 
             <!-- 备注（编辑态展开收起 / 只读态滚动显示） -->
-            <div class="form-group">
-                <div class="remark-header">
-                    <label>备注</label>
+            <div class="form-group" v-if="editable || form.remark">
+                <label>
+                    <span v-if="editable">备注</span>
                     <!-- 编辑态：展开/收起 -->
-                    <span v-if="editable" class="remark-toggle" @click="toggleRemark">
+                    <span v-if="editable" class="remark-toggle-link" @click="toggleRemark">
                         {{ showRemark ? '[收起]' : '[展开]' }}
                     </span>
-                </div>
+                </label>
                 <!-- 编辑态：文本域 -->
                 <textarea v-if="editable" v-show="showRemark" v-model="form.remark"
-                          placeholder="可选备注信息"
+                          placeholder="可选备注"
                           rows="3"></textarea>
                 <!-- 只读态：滚动区域显示完整备注 -->
                 <div v-else-if="form.remark" class="remark-readonly">{{ form.remark }}</div>
-                <span v-else>-</span>
             </div>
 
             <!-- 底部按钮 -->
@@ -272,7 +279,7 @@
                 <!-- 查看态：复制 + 编辑 + 删除 -->
                 <template v-if="modalMode === 'edit' && !editable">
                     <button class="btn-copy" @click="copyRecord">复制</button>
-                    <button class="btn-edit-mode" @click="editable = true">✏️ 编辑</button>
+                    <button class="btn-edit-mode" @click="editable = true">编辑</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
                 <!-- 编辑态：返回 + 保存 + 删除 -->
@@ -464,14 +471,14 @@
                 <div class="div1">
                     <span>💳 银行卡管理</span>
                     <button class="btn-add-card-inline" @click="openAddBankCard">＋ 新增</button>
-                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">🗑️ 回收站 ({{ deletedCards.length }})</button>
+                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">回收站 ({{ deletedCards.length }})</button>
                 </div>
                 <button class="close-btn" @click="bankManagerVisible = false">✕</button>
             </div>
             <div class="modal-desc">
                 图例说明：
-                <span>✅ 在列表中显示</span>
-                <span>❌ 不在列表中显示</span>
+                <span>✅ 列表显示</span>
+                <span>❌ 列表不显示</span>
                 <span>🚫 已禁用</span>
             </div>
             <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
@@ -493,14 +500,7 @@
                         <button class="btn-move" :disabled="idx === 0" @click="moveCard(activeCards, idx, -1)" title="上移">↑</button>
                         <button class="btn-move" :disabled="idx === activeCards.length - 1" @click="moveCard(activeCards, idx, 1)" title="下移">↓</button>
                     </span>
-                    <template v-if="!f.disabled">
-                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
-                        <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
-                    </template>
-                    <template v-else>
-                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
-                        <button class="btn-toggle-disable btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
-                    </template>
+                    <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
                 </div>
             </div>
             <div class="form-actions config-actions">
@@ -561,7 +561,8 @@
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
             </div>
             <div class="form-actions form-actions-sub" v-if="bankFormMode === 'edit'">
-                <button class="btn-delete" style="flex:1" @click="deleteBankCard">删除</button>
+                <button class="btn-toggle-disable" :class="bankForm.disabled ? 'btn-enable' : 'btn-disable'" @click="toggleDisabledFromForm">{{ bankForm.disabled ? '启用' : '禁用' }}</button>
+                <button class="btn-delete" @click="deleteBankCard">删除</button>
             </div>
         </div>
     </div>
@@ -570,7 +571,7 @@
     <div v-if="recycleBinVisible" class="modal-overlay">
         <div class="modal-box recycle-bin-box">
             <div class="modal-title">
-                <span>🗑️ 银行卡回收站</span>
+                <span>银行卡回收站</span>
                 <button class="close-btn" @click="closeRecycleBin">✕</button>
             </div>
             <div class="modal-desc">

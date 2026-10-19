@@ -426,9 +426,28 @@ const app = createApp({
 
         /**
          * 切换差额气泡：点哪个“上次”项显示其差额，再点关闭
+         * 该项没有有效上次数据（第一条记录或新增的卡）时不弹气泡，避免出现只写“差额”的空气泡
          */
         function toggleBubble(key) {
-            bubbleKey.value = bubbleKey.value === key ? '' : key;
+            if (bubbleKey.value === key) {
+                bubbleKey.value = '';
+                return;
+            }
+            const data = getPrevData(key);
+            if (!data || data.prev === null || data.prev === undefined) return;
+            bubbleKey.value = key;
+        }
+
+        /**
+         * 切换详情“对比上次”开关：第一条记录（没有上一条）无法对比，提示并保持关闭
+         */
+        function toggleShowPrev() {
+            if (!prevRecord.value) {
+                showToast('当前是第一条记录，无法对比上次');
+                showPrevData.value = false;
+                return;
+            }
+            showPrevData.value = !showPrevData.value;
         }
 
         /**
@@ -1019,6 +1038,8 @@ const app = createApp({
             const sorted = sortedRecords.value;
             const sIdx = sorted.findIndex(r => r.date === item.date);
             prevRecord.value = (sIdx !== -1 && sIdx + 1 < sorted.length) ? sorted[sIdx + 1] : null;
+            // 第一条记录没有上一条，关闭对比；其余记录保持当前开关（全局偏好自然延续）
+            if (!prevRecord.value) showPrevData.value = false;
             bubbleKey.value = '';
             modalVisible.value = true;
         }
@@ -1256,7 +1277,7 @@ const app = createApp({
 
         function toggleBankCardDisabled(key) {
             const card = configs.value.find(f => f.key === key);
-            if (!card) return;
+            if (!card) return false;
             const newState = !card.disabled;
             const action = newState ? '禁用' : '启用';
             let msg = `确定要${action}「${card.label}」吗？`;
@@ -1269,6 +1290,15 @@ const app = createApp({
                 card.disabled = newState;
                 saveConfig(configs.value);
                 showToast(`✅ 已${action}「${card.label}」`);
+                return true;
+            }
+            return false;
+        }
+
+        // 编辑银行卡弹窗内切换禁用/启用，成功后关闭弹窗回管理列表
+        function toggleDisabledFromForm() {
+            if (toggleBankCardDisabled(bankForm.value.key)) {
+                bankFormVisible.value = false;
             }
         }
 
@@ -1559,6 +1589,7 @@ const app = createApp({
             getBalance,
             getPrevData,
             toggleBubble,
+            toggleShowPrev,
             prevDateText,
             formatSigned,
             getDeletedDepositTotal,
@@ -1585,6 +1616,7 @@ const app = createApp({
             openEditBankCard,
             saveBankCard,
             toggleBankCardDisabled,
+            toggleDisabledFromForm,
             deleteBankCard,
             deletedCards,
             moveCard,
