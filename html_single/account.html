@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>家庭账户管理V0.6</title>
+    <title>家庭账户管理V0.7</title>
     <style>
         /* 全局重置 */
         * {
@@ -176,8 +176,6 @@
             border-radius: 10px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
             background: #fff;
-            max-height: 70vh;
-            overflow-y: auto;
         }
 
         .table-wrapper table {
@@ -312,16 +310,14 @@
         }
 
         /* 备注列 - 最多2行截断 */
-        .remark-cell {
-            max-width: 140px;
+        .remark-ellipsis {
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
             word-break: break-all;
-            line-height: 1.4;
-            white-space: normal;
+            line-height: 1.3;
         }
 
         /* 分页 */
@@ -362,6 +358,23 @@
         .pagination .page-count {
             margin: 0 8px;
             color: #999;
+        }
+
+        .pagination .page-jump {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .pagination .page-jump-input {
+            width: 48px;
+            padding: 4px 6px;
+            border: 1px solid #d0d5dd;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: center;
         }
 
         /* Modal */
@@ -456,6 +469,19 @@
             align-items: center;
             min-width: 120px;
             flex-wrap: wrap;
+        }
+
+        .card-brace {
+            width: 14px;
+            flex-shrink: 0;
+            align-self: stretch;
+            height: auto;
+            margin-top: 5px;
+            margin-bottom: 4px;
+        }
+
+        .card-brace path {
+            stroke: #9ab4cc;
         }
 
         .form-row .field-wrapper .sub-input {
@@ -591,24 +617,83 @@
             margin-right: 5px;
         }
 
-        /* 备注展开收起 */
-        .remark-header {
-            display: flex;
+        /* 详情「对比差额」标题开关 */
+        .detail-diff-switch {
+            font-size: 12px;
+            font-weight: 400;
+            color: #555;
+            margin-left: auto;
+            margin-right: 8px;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
+            cursor: pointer;
+            white-space: nowrap;
         }
 
-        .remark-header label {
-            margin-bottom: 0;
+        .detail-diff-switch input {
+            cursor: pointer;
         }
 
-        .remark-toggle {
+        /* 详情每张卡金额下方的上次值/差额小字 */
+        /* 详情「上次」数据（深灰小字，点击弹出差额气泡） */
+        .prev-value {
+            display: block;
+            flex-basis: 100%;
+            font-size: 11px;
+            color: #8a8f99;
+            margin-top: 2px;
+            cursor: pointer;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        /* 差额气泡（点“上次”后在其下方弹出 */
+        .diff-bubble {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #1a2a3a;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            margin-top: 3px;
+            z-index: 20;
+        }
+
+        .diff-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 14px;
+            border: 4px solid transparent;
+            border-bottom-color: #1a2a3a;
+        }
+
+        /* 上次日期 */
+        .prev-date {
+            font-size: 11px;
+            color: #8a8f99;
+            margin-left: 8px;
+        }
+
+        /* 内联展示但可点击弹气泡（如总余额右侧上次值，配合 prev-date 使用） */
+        .prev-clickable {
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* 备注展开收起 */
+        .remark-toggle-link {
             color: #3498db;
             cursor: pointer;
             font-size: 12px;
+            margin-left: 5px;
         }
 
-        .remark-toggle:hover {
+        .remark-toggle-link:hover {
             text-decoration: underline;
         }
 
@@ -824,7 +909,7 @@
 
         .bank-card-label {
             font-weight: 500;
-            margin-right: 8px;
+            /*margin-right: 8px;*/
         }
 
         .bank-card-types {
@@ -841,7 +926,7 @@
         }
 
         .bank-card-actions button {
-            padding: 2px 10px;
+            padding: 2px 5px;
             border: none;
             border-radius: 4px;
             font-size: 12px;
@@ -855,22 +940,67 @@
             background: #d0d5dd;
         }
 
-        .bank-card-actions .btn-disable {
+        .btn-disable {
             background: #8e44ad;
             color: #fff;
         }
 
-        .bank-card-actions .btn-disable:active {
+        .btn-disable:active {
             background: #6c3483;
         }
 
-        .bank-card-actions .btn-enable {
+        .btn-enable {
             background: #27ae60;
             color: #fff;
         }
 
-        .bank-card-actions .btn-enable:active {
+        .btn-enable:active {
             background: #1e8449;
+        }
+
+        /* 银行卡手动排序（上移/下移）按钮 */
+        .card-move-btns {
+            display: inline-flex;
+            gap: 3px;
+            margin-right: 4px;
+        }
+
+        .bank-card-actions .btn-move {
+            width: 22px;
+            padding: 2px 0;
+            font-weight: bold;
+            background: #dfe6ee;
+            color: #4a5568;
+        }
+
+        .bank-card-actions .btn-move:active {
+            background: #c2cbd8;
+        }
+
+        /* 上移 ↑：淡绿（积极向上） */
+        .bank-card-actions .btn-move:first-child {
+            background: #dcefe2;
+            color: #2f855a;
+        }
+
+        .bank-card-actions .btn-move:first-child:active {
+            background: #c3e3cf;
+        }
+
+        /* 下移 ↓：淡橙 */
+        .bank-card-actions .btn-move:last-child {
+            background: #fae6d4;
+            color: #c05621;
+        }
+
+        .bank-card-actions .btn-move:last-child:active {
+            background: #f3d4b8;
+        }
+
+        .bank-card-actions .btn-move:disabled {
+            background: #eef1f5;
+            color: #b8c0cc;
+            cursor: not-allowed;
         }
 
         /* 银行卡管理面板 */
@@ -883,7 +1013,12 @@
         .bank-card-manager-box .modal-title .div1 {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px 10px;
+            flex-wrap: wrap;
+        }
+
+        .bank-card-manager-box .modal-title .div1 > * {
+            white-space: nowrap;
         }
 
         .modal-box .modal-desc {
@@ -914,9 +1049,10 @@
         .bank-card-info {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             flex-wrap: wrap;
             flex: 1;
+            min-width: 0;
         }
 
         .disabled-icon {
@@ -966,7 +1102,7 @@
 
         .type-badge {
             font-size: 10px;
-            padding: 1px 8px;
+            padding: 1px 5px;
             border-radius: 10px;
             background: #e8ecf1;
             color: #555;
@@ -983,7 +1119,7 @@
         }
 
         .btn-edit-small {
-            padding: 3px 12px;
+            padding: 3px 6px;
             border: none;
             border-radius: 4px;
             font-size: 12px;
@@ -997,7 +1133,7 @@
         }
 
         .btn-toggle-disable {
-            padding: 3px 12px;
+            padding: 3px 8px;
             border: none;
             border-radius: 4px;
             font-size: 12px;
@@ -1013,6 +1149,19 @@
         .type-hint {
             font-size: 12px;
             color: red;
+        }
+
+        /* 取消类型警告 */
+        .type-removed-warning {
+            background-color: #fff0f0;
+            border: 2px solid #e74c3c;
+            padding: 6px;
+            border-radius: 6px;
+            color: #c0392b;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 160%;
+            flex: 1;
         }
 
         .category-checkbox-group {
@@ -1100,6 +1249,11 @@
             margin-top: 8px;
         }
 
+        /* 编辑银行卡弹窗第二行按钮与第一行等宽对齐（覆盖 .btn-delete 的 flex:0.6） */
+        .form-actions.form-actions-sub button {
+            flex: 1;
+        }
+
         .btn-delete {
             background: #e74c3c;
             color: #fff;
@@ -1114,8 +1268,8 @@
             background: #c0392b;
         }
 
-        /* 复制记录时的提示条 */
-        .copy-tip {
+        /* 提示条样式 */
+        .notice-tip {
             background: #fff8e1;
             border-left: 4px solid #ff9800;
             padding: 6px 12px;
@@ -1199,7 +1353,7 @@
 
         /* 银行卡回收站 */
         .btn-recycle-bin {
-            padding: 2px 10px;
+            padding: 2px 5px;
             font-size: 13px;
             border: none;
             border-radius: 4px;
@@ -1407,6 +1561,16 @@
                 font-size: 16px;
             }
 
+            .bank-card-manager-box .modal-title .div1 {
+                gap: 6px 8px;
+            }
+
+            .btn-add-card-inline,
+            .btn-recycle-bin {
+                padding: 2px 8px;
+                font-size: 12px;
+            }
+
             .form-row label {
                 min-width: 68px;
                 font-size: 12px;
@@ -1426,17 +1590,6 @@
                 font-size: 12px;
             }
         }
-
-        .legacy-tip {
-            margin-top: 6px;
-            padding: 8px 10px;
-            font-size: 12px;
-            line-height: 1.6;
-            color: #e67e22;
-            background: #fdf3e3;
-            border: 1px solid #f5d9a8;
-            border-radius: 6px;
-        }
     </style>
 </head>
 <body>
@@ -1444,7 +1597,7 @@
 
     <!-- 头部 -->
     <div class="app-header">
-        <h1>📊 家庭账户V0.6</h1>
+        <h1>📊 家庭账户V0.7</h1>
         <div class="header-actions">
             <button class="btn-fullscreen" @click="toggleFullscreen">↕ 全屏</button>
             <button class="btn-target" @click="openTargetModal">🎯 目标</button>
@@ -1458,7 +1611,7 @@
         <button class="btn-export" @click="openExportModal">📤 导出</button>
         <button class="btn-import" @click="triggerImport">📥 导入</button>
         <button class="btn-custom" @click="openBankCardManager">💳 银行卡管理</button>
-        <!-- <button class="btn-clear" @click="clearData">🗑 清除数据</button> -->
+        <!-- <button class="btn-clear" @click="clearData">🗑 清空数据</button> -->
     </div>
     <input type="file" id="fileInput" accept=".json" @change="importJSON($event)">
 
@@ -1487,7 +1640,7 @@
             </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
                 <!-- 日期（上：年份 / 下：月.日） -->
-                <td class="clickable-date" @click="openEditModal(item, idx)">
+                <td class="clickable-date" @click="openEditModal(item)">
                     <div class="cell-flex">
                         <span class="line1">{{ item.date.slice(0, 4) }}</span>
                         <span class="line2">{{ item.date.slice(5, 7) + '.' + item.date.slice(8, 10) }}</span>
@@ -1500,8 +1653,8 @@
                             {{ formatNumber(getBalance(item)) }}
                         </span>
                         <span class="line2"
-                              :style="getDiff(item, idx) !== null ? { color: getDiff(item, idx) < 0 ? 'orange' : '#666' } : {}">
-                            {{ getDiff(item, idx) !== null ? formatNumber(getDiff(item, idx)) : '-' }}
+                              :style="getDiff(item) !== null ? { color: getDiff(item) < 0 ? 'orange' : '#666' } : {}">
+                            {{ getDiff(item) !== null ? formatNumber(getDiff(item)) : '-' }}
                         </span>
                     </div>
                 </td>
@@ -1523,8 +1676,10 @@
                         </span>
                     </div>
                 </td>
-                <!-- 备注列 - 最多2行截断 -->
-                <td class="remark-cell">{{ item.remark || '-' }}</td>
+                <!-- 备注列 -->
+                <td>
+                    <div class="cell-flex remark-ellipsis">{{ item.remark || '-' }}</div>
+                </td>
             </tr>
             </tbody>
         </table>
@@ -1536,6 +1691,11 @@
         <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
         <span class="page-count">共 {{ records.length }} 条</span>
         <button @click="nextPage" :disabled="currentPage === totalPages">下一页 ▶</button>
+        <span class="page-jump">跳转到第
+            <input v-model.number="jumpPage" type="number" min="1" :max="totalPages" class="page-jump-input" />
+            页
+            <button class="page-jump-btn" @click="goToPage">Go</button>
+        </span>
     </div>
 
     <!-- 添加/编辑弹窗 -->
@@ -1550,11 +1710,19 @@
                         {{ editable ? '✏️ 编辑记录' : '📋 查看记录' }}
                     </template>
                 </span>
+                <label v-if="modalMode === 'edit' && !editable" class="detail-diff-switch">
+                    <input type="checkbox" :checked="showPrevData" @change="toggleShowPrev" /> 对比上次
+                </label>
                 <button class="close-btn" @click="confirmClose">✕</button>
             </div>
 
+            <!-- 对比上次全局操作提示 -->
+            <div v-if="showPrevData && modalMode === 'edit' && !editable" class="notice-tip">
+                💡 点击灰色的上次金额数据可查看“对比差额”。
+            </div>
+
             <!-- 复制记录时的提示 -->
-            <div v-if="isCopy" class="copy-tip">
+            <div v-if="isCopy" class="notice-tip">
                 💡 复制记录会自动带入上一条数据的金额，但字段显示以当前银行卡配置为准（已禁用的类型不会显示）。请核对金额是否正确。
             </div>
 
@@ -1563,22 +1731,39 @@
                 <label>【日期】</label>
                 <input v-if="editable" type="date" v-model="form.date" style="flex:1;"/>
                 <span v-else>{{ formatDateToDot(form.date) }}</span>
+                <span v-if="showPrevData && modalMode === 'edit' && !editable" class="prev-date">上次日期：{{ prevDateText || '-' }}</span>
             </div>
-
             <!-- 查看态汇总 -->
             <template v-if="modalMode === 'edit' && !editable">
                 <div class="form-group form-row">
                     <label>【总余额】</label>
-                    <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
-                        {{ formatNumber(getBalance(form)) }} 元
-                    </span>
-                    <span class="text-muted fs-12">( {{ formatNumber(getTotalDeposit(form)) }} - {{ formatNumber(getTotalDebt(form)) }} )</span>
+                    <div class="field-wrapper">
+                        <span class="text-bold" :class="getBalance(form) >= 0 ? 'text-green' : 'text-red'">
+                            {{ formatNumber(getBalance(form)) }} 元
+                        </span>
+                        <span v-if="showPrevData" class="prev-date prev-clickable" @click="toggleBubble('total_balance')">
+                            上次总余额：{{ getPrevData('total_balance') && getPrevData('total_balance').prev !== null ? formatNumber(getPrevData('total_balance').prev) : '-' }} 元
+                            <span v-if="bubbleKey === 'total_balance'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_balance') && getPrevData('total_balance').diff) }}</span>
+                        </span>
+                    </div>
                 </div>
                 <div class="form-group form-row">
                     <label>【汇总】</label>
                     <div class="field-wrapper">
-                        <span class="sub-input"><span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span></span>
-                        <span class="sub-input"><span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span></span>
+                        <span class="sub-input">
+                            <span class="label-small">存款</span><span class="text-blue">{{ formatNumber(getTotalDeposit(form)) }} 元</span>
+                            <span v-if="showPrevData" class="prev-value" @click="toggleBubble('total_deposit')">
+                                上次：{{ getPrevData('total_deposit') && getPrevData('total_deposit').prev !== null ? formatNumber(getPrevData('total_deposit').prev) : '-' }}
+                                <span v-if="bubbleKey === 'total_deposit'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_deposit') && getPrevData('total_deposit').diff) }}</span>
+                            </span>
+                        </span>
+                        <span class="sub-input">
+                            <span class="label-small">负债</span><span class="text-red">{{ formatNumber(getTotalDebt(form)) }} 元</span>
+                            <span v-if="showPrevData" class="prev-value" @click="toggleBubble('total_debt')">
+                                上次：{{ getPrevData('total_debt') && getPrevData('total_debt').prev !== null ? formatNumber(getPrevData('total_debt').prev) : '-' }}
+                                <span v-if="bubbleKey === 'total_debt'" class="diff-bubble">差额 {{ formatSigned(getPrevData('total_debt') && getPrevData('total_debt').diff) }}</span>
+                            </span>
+                        </span>
                     </div>
                 </div>
             </template>
@@ -1588,7 +1773,13 @@
             <!-- 各银行卡字段（存款/负债并排） -->
             <template v-for="f in editableFields" :key="f.key">
                 <div class="form-group form-row" v-if="shouldShowFieldInModal(f)">
-                    <label>{{ f.label }}</label>
+                    <label>{{ f.label }}: </label>
+                    <!-- 对比上次：卡名与明细行间的花括号 -->
+                    <svg v-if="showPrevData && modalMode === 'edit' && !editable"
+                         class="card-brace" viewBox="0 0 24 36" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M22 0 C16 0 12 4 12 10 C12 14 10 16 6 18 C10 20 12 22 12 26 C12 32 16 36 22 36"
+                              fill="none" stroke-width="2.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                    </svg>
                     <div class="field-wrapper">
                         <!-- 存款：add 模式严格按配置；edit/view 模式含非零历史数据 -->
                         <template v-if="shouldShowTypeField(f, 'deposit')">
@@ -1602,6 +1793,10 @@
                                 <span class="sub-input" style="flex:1;">
                                     <span class="label-small">存款</span>
                                     <span class="text-blue">{{ formatNumber(form[f.key + '_deposit'] || 0) }}</span>元
+                                    <span v-if="showPrevData" class="prev-value" @click="toggleBubble('deposit_'+f.key)">
+                                        上次：{{ getPrevData('deposit_'+f.key) && getPrevData('deposit_'+f.key).prev !== null ? formatNumber(getPrevData('deposit_'+f.key).prev) : '-' }}
+                                        <span v-if="bubbleKey === 'deposit_'+f.key" class="diff-bubble">差额 {{ formatSigned(getPrevData('deposit_'+f.key) && getPrevData('deposit_'+f.key).diff) }}</span>
+                                    </span>
                                 </span>
                             </template>
                         </template>
@@ -1617,6 +1812,10 @@
                                 <span class="sub-input" style="flex:1;">
                                     <span class="label-small">负债</span>
                                     <span class="text-red">{{ formatNumber(form[f.key + '_debt'] || 0) }}</span>元
+                                    <span v-if="showPrevData" class="prev-value" @click="toggleBubble('debt_'+f.key)">
+                                        上次：{{ getPrevData('debt_'+f.key) && getPrevData('debt_'+f.key).prev !== null ? formatNumber(getPrevData('debt_'+f.key).prev) : '-' }}
+                                        <span v-if="bubbleKey === 'debt_'+f.key" class="diff-bubble">差额 {{ formatSigned(getPrevData('debt_'+f.key) && getPrevData('debt_'+f.key).diff) }}</span>
+                                    </span>
                                 </span>
                             </template>
                         </template>
@@ -1644,21 +1843,20 @@
             </template>
 
             <!-- 备注（编辑态展开收起 / 只读态滚动显示） -->
-            <div class="form-group">
-                <div class="remark-header">
-                    <label>备注</label>
+            <div class="form-group" v-if="editable || form.remark">
+                <label>
+                    <span v-if="editable">备注</span>
                     <!-- 编辑态：展开/收起 -->
-                    <span v-if="editable" class="remark-toggle" @click="toggleRemark">
+                    <span v-if="editable" class="remark-toggle-link" @click="toggleRemark">
                         {{ showRemark ? '[收起]' : '[展开]' }}
                     </span>
-                </div>
+                </label>
                 <!-- 编辑态：文本域 -->
                 <textarea v-if="editable" v-show="showRemark" v-model="form.remark"
-                          placeholder="可选备注信息"
+                          placeholder="可选备注"
                           rows="3"></textarea>
                 <!-- 只读态：滚动区域显示完整备注 -->
                 <div v-else-if="form.remark" class="remark-readonly">{{ form.remark }}</div>
-                <span v-else>-</span>
             </div>
 
             <!-- 底部按钮 -->
@@ -1667,7 +1865,7 @@
                 <!-- 查看态：复制 + 编辑 + 删除 -->
                 <template v-if="modalMode === 'edit' && !editable">
                     <button class="btn-copy" @click="copyRecord">复制</button>
-                    <button class="btn-edit-mode" @click="editable = true">✏️ 编辑</button>
+                    <button class="btn-edit-mode" @click="editable = true">编辑</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
                 <!-- 编辑态：返回 + 保存 + 删除 -->
@@ -1676,8 +1874,9 @@
                     <button class="btn-confirm" @click="saveRecord">保存修改</button>
                     <button class="btn-delete" @click="deleteRecord">删除</button>
                 </template>
-                <!-- 添加态：只有保存 -->
+                <!-- 添加态：只有保存；复制态额外提供返回，回到来源记录 -->
                 <template v-if="modalMode === 'add'">
+                    <button v-if="isCopy" class="btn-cancel" @click="cancelCopy">返回</button>
                     <button class="btn-confirm" @click="saveRecord">保存</button>
                 </template>
             </div>
@@ -1697,7 +1896,7 @@
                 <label>每年收入: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualIncome" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
-                    {{ formatNumber(targetForm.annualIncome) || '-' }}
+                    {{ targetForm.annualIncome ? formatNumber(targetForm.annualIncome) + ' 元' : '-' }}
                     <span v-if="targetForm.annualIncome > 0" class="text-darkred fs-12">(平均每月 {{ formatNumber((targetForm.annualIncome / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
@@ -1713,7 +1912,7 @@
                 <label>每年支出: </label>
                 <input v-if="targetEditable" type="number" step="1" v-model.number="targetForm.annualExpense" placeholder="元" class="form-input-flex" />
                 <span v-else class="text-blue">
-                    {{ formatNumber(targetForm.annualExpense) || '-' }}
+                    {{ targetForm.annualExpense ? formatNumber(targetForm.annualExpense) + ' 元' : '-' }}
                     <span v-if="targetForm.annualExpense > 0" class="text-darkgreen fs-12">(平均每月 {{ formatNumber((targetForm.annualExpense / 12).toFixed(0)) }} 元)</span>
                 </span>
             </div>
@@ -1722,21 +1921,6 @@
             <div class="form-group">
                 <textarea v-if="targetEditable" v-model="targetForm.expenseRemark" rows="5" placeholder="每年支出的补充说明..."></textarea>
                 <div v-else class="remark-box">{{ targetForm.expenseRemark || '暂无说明' }}</div>
-            </div>
-
-            <!-- 旧版目标数据兼容提示 -->
-            <div v-if="legacyTargetDetected" class="legacy-tip">
-                <template v-if="targetEditable">
-                    <template v-if="computedMonths > 0">
-                        ⚠️ 检测到旧版数据，已按「目标金额 {{ formatNumber(targetForm.targetAmount) }} ÷ 剩余 {{ computedMonths }} 个月」折算每年支出约为 <strong>{{ formatNumber(legacySuggestedExpense) }}</strong> 元，可作为参考数值直接使用或自行输入后保存。
-                    </template>
-                    <template v-else>
-                        ⚠️ 检测到旧版数据，但目标日期已过或无效，无法折算参考值，请直接填写每年支出。
-                    </template>
-                </template>
-                <template v-else>
-                    ⚠️ 检测到旧版数据（目标金额 {{ formatNumber(targetForm.targetAmount) }} 元）。新版已改为「每年支出」自动计算目标金额，请点击「编辑」补充每年支出。
-                </template>
             </div>
 
             <!-- 目标日期 -->
@@ -1778,7 +1962,7 @@
             <!-- 当前总余额 + 计算按钮 -->
             <div class="form-group form-row">
                 <label>当前总余额: </label>
-                <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }}</span>
+                <span class="text-green text-bold">{{ formatNumber(targetForm.currentBalance) }} 元</span>
                 <button v-if="!targetEditable" style="padding:4px 12px;background:#3498db;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:8px;" @click="calcTarget">开始计算</button>
             </div>
 
@@ -1873,18 +2057,18 @@
                 <div class="div1">
                     <span>💳 银行卡管理</span>
                     <button class="btn-add-card-inline" @click="openAddBankCard">＋ 新增</button>
-                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">🗑️ 回收站 ({{ deletedCards.length }})</button>
+                    <button v-if="deletedCards.length" class="btn-recycle-bin" @click="openRecycleBin">回收站 ({{ deletedCards.length }})</button>
                 </div>
                 <button class="close-btn" @click="bankManagerVisible = false">✕</button>
             </div>
             <div class="modal-desc">
                 图例说明：
-                <span>✅ 在列表中显示</span>
-                <span>❌ 不在列表中显示</span>
+                <span>✅ 列表显示</span>
+                <span>❌ 列表不显示</span>
                 <span>🚫 已禁用</span>
             </div>
             <div v-if="allConfigs.length === 0" class="bank-card-empty">暂无银行卡</div>
-            <div v-for="f in allConfigs.filter(c => !c.isDeleted)" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
+            <div v-for="(f, idx) in activeCards" :key="f.key" class="bank-card-item" :class="{ 'bank-card-disabled': f.disabled }">
                 <div class="bank-card-info">
                     <span v-if="f.disabled" class="disabled-icon">🚫</span>
                     <span v-else class="list-status-icon" :class="f.showInList !== false ? 'list-on' : 'list-off'">
@@ -1898,14 +2082,11 @@
                     <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
-                    <template v-if="!f.disabled">
-                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
-                        <button class="btn-toggle-disable btn-disable" @click="toggleBankCardDisabled(f.key)">禁用</button>
-                    </template>
-                    <template v-else>
-                        <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
-                        <button class="btn-toggle-disable btn-enable" @click="toggleBankCardDisabled(f.key)">启用</button>
-                    </template>
+                    <span class="card-move-btns">
+                        <button class="btn-move" :disabled="idx === 0" @click="moveCard(activeCards, idx, -1)" title="上移">↑</button>
+                        <button class="btn-move" :disabled="idx === activeCards.length - 1" @click="moveCard(activeCards, idx, 1)" title="下移">↓</button>
+                    </span>
+                    <button class="btn-edit-small" @click="openEditBankCard(f)">编辑</button>
                 </div>
             </div>
             <div class="form-actions config-actions">
@@ -1938,6 +2119,14 @@
                 </div>
             </div>
 
+            <!-- 取消类型警告：历史数据不丢失，但后续新增记录无法填写该类型 -->
+            <div class="form-group form-row" v-if="bankFormMode === 'edit' && bankForm.originalCategory && bankForm.originalCategory.some(type => !bankForm.category.includes(type))">
+                <label></label>
+                <div class="type-removed-warning">
+                    <strong>⚠️ 提醒：</strong>您取消了部分类型，历史数据不会丢失，仍然会正常显示；但后续新增记录将无法填写该类型。
+                </div>
+            </div>
+
             <!-- 列表显示 -->
             <div class="form-group form-row">
                 <label>列表显示: </label>
@@ -1958,7 +2147,8 @@
                 <button class="btn-confirm" @click="saveBankCard">保存</button>
             </div>
             <div class="form-actions form-actions-sub" v-if="bankFormMode === 'edit'">
-                <button class="btn-delete" style="flex:1" @click="deleteBankCard">删除</button>
+                <button class="btn-toggle-disable" :class="bankForm.disabled ? 'btn-enable' : 'btn-disable'" @click="toggleDisabledFromForm">{{ bankForm.disabled ? '启用' : '禁用' }}</button>
+                <button class="btn-delete" @click="deleteBankCard">删除</button>
             </div>
         </div>
     </div>
@@ -1967,14 +2157,14 @@
     <div v-if="recycleBinVisible" class="modal-overlay">
         <div class="modal-box recycle-bin-box">
             <div class="modal-title">
-                <span>🗑️ 银行卡回收站</span>
+                <span>银行卡回收站</span>
                 <button class="close-btn" @click="closeRecycleBin">✕</button>
             </div>
             <div class="modal-desc">
                 已删除的银行卡及其历史记录数据可在此恢复；彻底删除会同时清除历史记录中的对应数据。
             </div>
             <div v-if="deletedCards.length === 0" class="bank-card-empty">回收站为空</div>
-            <div v-for="f in deletedCards" :key="f.key" class="bank-card-item">
+            <div v-for="(f, idx) in deletedCards" :key="f.key" class="bank-card-item">
                 <div class="bank-card-info">
                     <span class="disabled-icon">🗑️</span>
                     <span class="bank-card-label">{{ f.label }}</span>
@@ -1985,6 +2175,10 @@
                     <div v-if="f.remark" class="bank-card-remark">{{ f.remark }}</div>
                 </div>
                 <div class="bank-card-actions">
+                    <span class="card-move-btns">
+                        <button class="btn-move" :disabled="idx === 0" @click="moveCard(deletedCards, idx, -1)" title="上移">↑</button>
+                        <button class="btn-move" :disabled="idx === deletedCards.length - 1" @click="moveCard(deletedCards, idx, 1)" title="下移">↓</button>
+                    </span>
                     <button class="btn-enable" @click="restoreCard(f)">↩️ 恢复</button>
                     <!-- 彻底删除：功能已完整实现，为确保数据安全，入口暂时注释，如有需要请自行取消注释后即可使用 -->
                     <!-- <button class="btn-permanent-delete" @click="requestPermanentDelete(f)">彻底删除</button> -->
@@ -2089,11 +2283,13 @@
      * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
      * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
      * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, annualExpense, targetDate, targetRemark, ... }>，targetAmount 实时计算不存储）
+     * UI_PREFS: 界面偏好（Object<{ showPrevData, showRemark, targetReminderExpanded }>，记忆开关展开状态）
      */
     var STORAGE_KEYS = {
         RECORDS: 'financial_account_records',
         BANK_CARD_CONFIGS: 'financial_account_bank_card_configs',
-        TARGET: 'financial_account_target'
+        TARGET: 'financial_account_target',
+        UI_PREFS: 'financial_account_ui_prefs'
     };
 
     function loadConfig() {
@@ -2110,6 +2306,42 @@
 
     function saveConfig(config) {
         localStorage.setItem(STORAGE_KEYS.BANK_CARD_CONFIGS, JSON.stringify(config));
+    }
+
+    /**
+     * DEFAULT_UI_PREFS: 界面偏好默认值
+     * 新增偏好字段时在这里补默认，保证旧数据缺字段也能正常读取。
+     */
+    var DEFAULT_UI_PREFS = {
+        showPrevData: false,
+        showRemark: true,
+        targetReminderExpanded: false
+    };
+
+    /**
+     * 读取界面偏好（合并默认值，字段缺失自动补默认）
+     * @returns {Object} 界面偏好对象
+     */
+    function loadUiPrefs() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.UI_PREFS);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data && typeof data === 'object') {
+                    return Object.assign({}, DEFAULT_UI_PREFS, data);
+                }
+            }
+        } catch (_) {
+        }
+        return Object.assign({}, DEFAULT_UI_PREFS);
+    }
+
+    /**
+     * 保存界面偏好
+     * @param {Object} prefs 界面偏好对象
+     */
+    function saveUiPrefs(prefs) {
+        localStorage.setItem(STORAGE_KEYS.UI_PREFS, JSON.stringify(prefs));
     }
 
     function generateKey() {
@@ -2306,6 +2538,7 @@
 
             // 响应式：分页
             const currentPage = ref(1);         // 当前页码
+            const jumpPage = ref(1);            // 分页跳转输入框页码
             const pageSize = 10;                // 每页显示记录数
 
             // Toast
@@ -2317,9 +2550,16 @@
             const modalMode = ref('add');   // 'add' | 'edit'
             const editable = ref(false);    // 编辑态（true）还是查看态（false）
             const isCopy = ref(false);      // 是否为复制记录（复制时弹窗标题与提示条用）
+            let copySourceIndex = -1;       // 复制来源记录下标（返回时回到原记录查看态）
             const editIndex = ref(-1);
             const form = ref({});
-            const showRemark = ref(false);  // 备注输入框是否展开（编辑态）
+            // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录
+            const prevRecord = ref(null);
+            const uiPrefs = loadUiPrefs();
+            const showPrevData = ref(uiPrefs.showPrevData === true);
+            // 差额气泡：当前点击的“上次”对比项 key（再点关闭）
+            const bubbleKey = ref('');
+            const showRemark = ref(uiPrefs.showRemark === true);  // 备注输入框是否展开（编辑态，按上次偏好）
 
             // 银行卡管理
             const bankManagerVisible = ref(false);
@@ -2327,7 +2567,9 @@
             const bankFormMode = ref('add');  // 'add' | 'edit'
             const bankForm = ref({key: '', label: '', category: ['deposit', 'debt'], showInList: true});
             const editingCardKey = ref('');
-            const bankFormModified = ref(false); // 标记银行卡表单是否被修改过
+            // 弹窗打开时的表单快照（JSON），关闭时据此判断是否有未保存修改
+            let formSnapshot = '';
+            let targetSnapshot = '';
 
             // 回收站
             const recycleBinVisible = ref(false);
@@ -2337,7 +2579,7 @@
             // 目标
             const targetModalVisible = ref(false);
             const targetEditable = ref(false);
-            const targetReminderExpanded = ref(false);
+            const targetReminderExpanded = ref(uiPrefs.targetReminderExpanded === true);
             const targetForm = ref({
                 annualIncome: '',
                 incomeRemark: '',
@@ -2352,8 +2594,6 @@
                 targetDuration: ''
             });
             const targetCalculated = ref(false);
-            // 旧版目标数据检测（有目标金额但缺每年支出，提示用户补充）
-            const legacyTargetDetected = ref(false);
 
             // 计算
             /**
@@ -2377,19 +2617,13 @@
                 return formatDuration(computedMonths.value);
             });
 
-            /**
-             * 旧版数据折算的每年支出参考值（目标金额 × 12 ÷ 剩余月数）
-             */
-            const legacySuggestedExpense = computed(() => {
-                if (!legacyTargetDetected.value || computedMonths.value <= 0) return 0;
-                return Math.round((Number(targetForm.value.targetAmount) || 0) * 12 / computedMonths.value);
-            });
-
             // displayFields: 列表中实际显示的银行卡列（禁用、隐藏或已删除的不显示）
             const displayFields = computed(() => {
                 return configs.value.filter(f => !f.disabled && !f.isDeleted && f.showInList !== false);
             });
             const allConfigs = computed(() => configs.value);
+            // 银行卡管理面板列表（未删除的卡，含禁用）；顺序即 configs 数组顺序，供上移/下移手动排序
+            const activeCards = computed(() => configs.value.filter(c => !c.isDeleted));
             const editableFields = computed(() => {
                 if (modalMode.value === 'add') {
                     return configs.value.filter(f => !f.disabled);
@@ -2424,6 +2658,81 @@
                 if (val !== 0) return val;
                 if (!f.category.includes(type)) return null;
                 return 0;
+            }
+
+            /**
+             * 详情「对比上次」：返回某对比项的上次值与差额
+             * @param {string} key 'total_balance'/'total_deposit'/'total_debt' 或 'deposit_{卡key}'/'debt_{卡key}'
+             * @returns {{prev:(number|null), diff:(number|null)}|null} 开关关/非查看态/无上次记录时返回 null；
+             *          上次无该字段时 prev/diff 均为 null
+             */
+            function getPrevData(key) {
+                if (!showPrevData.value) return null;
+                if (modalMode.value !== 'edit' || editable.value) return null;
+                if (!prevRecord.value) return null;
+                const curForm = form.value;
+                const prevForm = prevRecord.value;
+                let cur, prev;
+                if (key === 'total_balance') {
+                    cur = getBalance(curForm);
+                    prev = getBalance(prevForm);
+                } else if (key === 'total_deposit') {
+                    cur = getTotalDeposit(curForm);
+                    prev = getTotalDeposit(prevForm);
+                } else if (key === 'total_debt') {
+                    cur = getTotalDebt(curForm);
+                    prev = getTotalDebt(prevForm);
+                } else {
+                    const m = key.match(/^(deposit|debt)_(.+)$/);
+                    if (!m) return null;
+                    const field = m[2] + '_' + m[1];
+                    cur = Number(curForm[field]) || 0;
+                    if (!(field in prevForm)) return { prev: null, diff: null };
+                    prev = Number(prevForm[field]) || 0;
+                }
+                return { prev: prev, diff: cur - prev };
+            }
+
+            /**
+             * 切换差额气泡：点哪个“上次”项显示其差额，再点关闭
+             * 该项没有有效上次数据（第一条记录或新增的卡）时不弹气泡，避免出现只写“差额”的空气泡
+             */
+            function toggleBubble(key) {
+                if (bubbleKey.value === key) {
+                    bubbleKey.value = '';
+                    return;
+                }
+                const data = getPrevData(key);
+                if (!data || data.prev === null || data.prev === undefined) return;
+                bubbleKey.value = key;
+            }
+
+            /**
+             * 切换详情“对比上次”开关：第一条记录（没有上一条）无法对比，提示并保持关闭
+             */
+            function toggleShowPrev() {
+                if (!prevRecord.value) {
+                    showToast('当前是第一条记录，无法对比上次');
+                    showPrevData.value = false;
+                    return;
+                }
+                showPrevData.value = !showPrevData.value;
+            }
+
+            /**
+             * 上次记录的日期（日期旁展示，不可点击）
+             */
+            const prevDateText = computed(() => {
+                if (!prevRecord.value) return '';
+                return formatDateToDot(prevRecord.value.date);
+            });
+
+            /**
+             * 差额带正负号格式化（正数补 +，0 显示 0）
+             */
+            function formatSigned(num) {
+                if (num === null || num === undefined || isNaN(num)) return '';
+                return (num > 0 ? '+' : '') + formatNumber(num);
             }
 
             // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
@@ -2503,10 +2812,9 @@
              * 计算某条记录与上一条记录的余额差额（对比差额）
              * 上一条指的是"日期更早"的那条记录（因为 sortedRecords 按日期降序排列）
              * @param {Object} item - 当前记录
-             * @param {number} idxInPage - 当前页中的索引
              * @returns {number|null} 差额（当前余额 - 上一条余额），如果没有上一条则返回 null
              */
-            function getDiff(item, idxInPage) {
+            function getDiff(item) {
                 const realIdx = sortedRecords.value.indexOf(item);
                 if (realIdx === -1 || realIdx + 1 >= sortedRecords.value.length) return null;
                 const prev = sortedRecords.value[realIdx + 1];
@@ -2564,10 +2872,24 @@
 
             function prevPage() {
                 if (currentPage.value > 1) currentPage.value--;
+                jumpPage.value = currentPage.value;
             }
 
             function nextPage() {
                 if (currentPage.value < totalPages.value) currentPage.value++;
+                jumpPage.value = currentPage.value;
+            }
+
+            // 跳转到指定页
+            function goToPage() {
+                const p = Number(jumpPage.value);
+                if (isNaN(p) || p < 1 || p > totalPages.value) {
+                    showToast('请输入 1~' + totalPages.value + ' 之间的页码');
+                    jumpPage.value = currentPage.value;
+                    return;
+                }
+                currentPage.value = p;
+                jumpPage.value = p;
             }
 
             // 全屏
@@ -2605,22 +2927,48 @@
                     const currentBalance = latest ? getBalance(latest) : 0;
                     // 目标金额实时计算（每年支出 ÷ 12 × 剩余月数）
                     const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
-                    // 剩余金额与预计达成日期：现场重算（与页面「开始计算」逻辑一致，不依赖页面状态）
+                    // 距离目标剩余金额、预计达成日期：现场重算（与页面「开始计算」逻辑一致）
                     const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
+                    // 目标日期到今天的剩余月数（用于目标金额公式、每月最低收入）
+                    const months = calcMonths(targetData.targetDate);
+                    const remaining = targetCalc.remaining;
 
                     const targetRows = [
-                        ['每年收入', targetData.annualIncome || ''],
-                        ['每年收入说明', targetData.incomeRemark || ''],
-                        ['每年支出', targetData.annualExpense || ''],
-                        ['每年支出说明', targetData.expenseRemark || ''],
-                        ['目标日期', targetData.targetDate || ''],
-                        ['目标金额', targetAmount],
+                        ['【目标计划】'],
+                        ['每年收入', (targetData.annualIncome ? formatNumber(targetData.annualIncome) + ' 元' : ''),
+                            (targetData.annualIncome > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualIncome / 12)) + ' 元)' : '')],
+                        ['收入说明', targetData.incomeRemark || ''],
+                        ['每年支出', (targetData.annualExpense ? formatNumber(targetData.annualExpense) + ' 元' : ''),
+                            (targetData.annualExpense > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualExpense / 12)) + ' 元)' : '')],
+                        ['支出说明', targetData.expenseRemark || ''],
+                        ['目标日期', formatDateToDot(targetData.targetDate || ''),
+                            (months > 0 ? '（' + formatDuration(months) + '）' : '')],
+                        ['目标金额', (targetAmount > 0 ? formatNumber(targetAmount) + ' 元' : ''),
+                            (targetData.annualExpense && months > 0 ? '(' + formatNumber(targetData.annualExpense) + ' ÷ 12 × ' + months + ' 个月)' : '')],
                         ['目标说明', targetData.targetRemark || ''],
-                        ['当前总余额', currentBalance],
-                        ['剩余金额', targetCalc.remaining],
-                        ['预计达成日期', targetCalc.targetDateDisplay],
-                        ['剩余时间', targetCalc.targetDuration]
+                        ['当前总余额', formatNumber(currentBalance) + ' 元'],
                     ];
+
+                    // 距离目标剩余金额和截止日期（仅当收入和目标金额有效时显示）
+                    if (targetData.annualIncome > 0 && targetAmount > 0) {
+                        targetRows.push(['（距离目标剩余金额和截止日期）', '按照当前收入和支出水平不变，不需要奋斗到目标日期，提前到什么时候可以达成目标？']);
+                        targetRows.push(['距离目标剩余金额', formatNumber(remaining) + ' 元',
+                            '(目标金额 ' + formatNumber(targetAmount) + ' - 当前余额 ' + formatNumber(currentBalance) + ')']);
+                        targetRows.push(['剩余金额截止日期', targetCalc.targetDateDisplay,
+                            (targetCalc.targetDuration ? '(还剩 ' + targetCalc.targetDuration + ')' : ''),
+                            '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 每年收入 ' + formatNumber(targetData.annualIncome) + ')']);
+                    }
+
+                    // 距离目标日期每月最低收入（仅当剩余金额 > 0 且剩余月数 > 0 时显示）
+                    if (remaining > 0 && months > 0) {
+                        const monthlyMin = Math.round(remaining / months);
+                        const yearlyMin = Math.round(remaining / months * 12);
+                        targetRows.push(['（距离目标日期每月最低收入）', '一直奋斗到目标日期，每个月收入不能低于多少钱？']);
+                        targetRows.push(['每月最低收入', formatNumber(monthlyMin) + ' 元']);
+                        targetRows.push(['每年最低收入(每月×12)', formatNumber(yearlyMin) + ' 元',
+                            '从现在 到 ' + formatDateToDot(targetData.targetDate || '') + '，还剩下 ' + months + ' 个月',
+                            '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 剩余总月份 ' + months + ' 个月)']);
+                    }
 
                     targetRows.forEach(row => {
                         const escaped = row.map(val => {
@@ -2636,7 +2984,8 @@
                     csv += '\n';
                 }
 
-                // 2. 构建表头
+                // 2. 数据记录分区标题 + 表头
+                csv += '【数据记录】\n';
                 const headers = ['日期', '总余额', '对比差额', '总存款', '总负债'];
                 configs.value.filter(f => !f.isDeleted).forEach(f => {
                     if (f.category.includes('deposit')) headers.push(`${f.label}存款`);
@@ -2652,7 +3001,7 @@
                     const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
                     const diff = prev ? getBalance(item) - getBalance(prev) : null;
                     const row = [
-                        item.date,
+                        formatDateToDot(item.date),
                         getBalance(item),
                         diff !== null ? diff : '-',
                         getTotalDeposit(item),
@@ -2698,17 +3047,18 @@
             }
 
             function exportJSON() {
-                if (records.value.length === 0 && configs.value.length === 0) {
-                    showToast('暂无数据');
-                    return;
-                }
-
                 // 读取目标数据
                 let targetData = null;
                 try {
                     const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
                     if (raw) targetData = JSON.parse(raw);
                 } catch (_) {
+                }
+
+                // 仅目标有数据时也可导出；records/config/target 三者都为空的时候才提示
+                if (records.value.length === 0 && configs.value.length === 0 && !targetData) {
+                    showToast('暂无数据可导出');
+                    return;
                 }
 
                 // 按日期降序排列
@@ -2825,9 +3175,10 @@
                         configs.value = data.config;
                         saveConfig(configs.value);
                     }
-                    // 合并目标：有则直接覆盖
+                    // 合并目标：有则直接覆盖，并同步到目标表单
                     if (data.target) {
                         localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                        targetForm.value = {...targetForm.value, ...data.target};
                     }
                     showToast(`✅ 合并导入完成：新增 ${addedCount} 条，更新 ${updatedCount} 条`);
                 } else {
@@ -2843,8 +3194,14 @@
                     saveData();
                     if (data.target) {
                         localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                        targetForm.value = {...targetForm.value, ...data.target};
                     } else {
                         localStorage.removeItem(STORAGE_KEYS.TARGET);
+                        targetForm.value = {
+                            annualIncome: '', incomeRemark: '', annualExpense: '', expenseRemark: '',
+                            targetAmount: 0, targetDate: '', targetRemark: '',
+                            currentBalance: 0, remaining: 0, targetDateDisplay: '', targetDuration: ''
+                        };
                     }
                     showToast(`✅ 覆盖导入完成：已导入 ${records.value.length} 条记录`);
                 }
@@ -2917,20 +3274,25 @@
 
             // 记录操作
             function openAddModal() {
-                if (configs.value.length === 0) {
-                    showToast('⚠️ 请先添加银行卡');
+                // 没有可用的（未禁用、未删除）银行卡时，无法填写任何金额
+                const availableCards = configs.value.filter(c => !c.disabled && !c.isDeleted);
+                if (availableCards.length === 0) {
+                    showToast('⚠️ 请先配置银行卡（点击「银行卡管理」添加或启用）');
                     return;
                 }
                 modalMode.value = 'add';
                 editable.value = true;
                 editIndex.value = -1;
                 isCopy.value = false;
+                copySourceIndex = -1;
                 form.value = getDefaultForm();
-                showRemark.value = false;
+                formSnapshot = JSON.stringify(form.value);
+                showRemark.value = loadUiPrefs().showRemark === true;
+                prevRecord.value = null;
                 modalVisible.value = true;
             }
 
-            function openEditModal(item, idx) {
+            function openEditModal(item) {
                 if (!item) return;
                 const realIdx = records.value.findIndex(r => r.date === item.date);
                 if (realIdx === -1) return;
@@ -2939,13 +3301,21 @@
                 editIndex.value = realIdx;
                 isCopy.value = false;
                 form.value = {...records.value[realIdx]};
-                showRemark.value = !!form.value.remark; // 有备注默认展开
+                formSnapshot = JSON.stringify(form.value);
+                showRemark.value = loadUiPrefs().showRemark === true; // 按上次偏好（展开/收起）
+                // 上一条（日期更早的相邻）记录，供详情逐卡对比上次金额/差额
+                const sorted = sortedRecords.value;
+                const sIdx = sorted.findIndex(r => r.date === item.date);
+                prevRecord.value = (sIdx !== -1 && sIdx + 1 < sorted.length) ? sorted[sIdx + 1] : null;
+                // 第一条记录没有上一条，关闭对比；其余记录保持当前开关（全局偏好自然延续）
+                if (!prevRecord.value) showPrevData.value = false;
+                bubbleKey.value = '';
                 modalVisible.value = true;
             }
 
             // 取消编辑：恢复原始数据，退出编辑态
             function cancelEdit() {
-                if (editable.value) {
+                if (editable.value && JSON.stringify(form.value) !== formSnapshot) {
                     if (!confirm('您有未保存的修改，确定要返回吗？')) return;
                 }
                 const idx = editIndex.value;
@@ -3010,11 +3380,20 @@
                 }
                 saveData();
                 modalVisible.value = false;
+                // add 模式：新记录按日期排最前，回到第一页便于查看
+                // edit 模式：保留当前页，仅当当前页越界时修正到最后一页
+                if (modalMode.value === 'add') {
+                    currentPage.value = 1;
+                } else if (currentPage.value > totalPages.value) {
+                    currentPage.value = totalPages.value;
+                }
             }
 
             // 复制当前记录：保留所有数据，日期设为今天，进入添加模式
             function copyRecord() {
                 const data = {...form.value};
+                copySourceIndex = editIndex.value;
+                prevRecord.value = null;
                 modalVisible.value = false;
                 setTimeout(() => {
                     modalMode.value = 'add';
@@ -3026,10 +3405,24 @@
                     const d = String(today.getDate()).padStart(2, '0');
                     data.date = `${y}-${m}-${d}`;
                     form.value = data;
+                    formSnapshot = JSON.stringify(form.value);
                     editable.value = true;
-                    showRemark.value = false;
+                    showRemark.value = loadUiPrefs().showRemark === true;
                     modalVisible.value = true;
                 }, 100);
+            }
+
+            // 取消复制：回到来源记录的查看态（有修改先确认）
+            function cancelCopy() {
+                if (isCopy.value && JSON.stringify(form.value) !== formSnapshot) {
+                    if (!confirm('您有未保存的修改，确定要返回吗？')) return;
+                }
+                if (copySourceIndex >= 0 && copySourceIndex < records.value.length) {
+                    // 复用查看态打开逻辑：同步重建上一条对比、气泡状态与表单快照
+                    openEditModal(records.value[copySourceIndex]);
+                } else {
+                    modalVisible.value = false;
+                }
             }
 
             function deleteRecord() {
@@ -3043,23 +3436,13 @@
                 }
             }
 
-            // 关闭记录弹窗前确认未保存的修改
+            // 关闭记录弹窗前确认未保存的修改（仅当内容相对打开时快照有变化才提示）
             function confirmClose() {
                 let needConfirm = false;
-                if (modalMode.value === 'add') {
-                    // 检查是否有填写内容（日期、金额、备注）
-                    const f = form.value;
-                    const hasDate = !!f.date;
-                    let hasAmount = false;
-                    Object.keys(f).forEach(k => {
-                        if (k !== 'date' && k !== 'remark' && Number(f[k]) !== 0) hasAmount = true;
-                    });
-                    const hasRemark = !!f.remark;
-                    if (hasDate || hasAmount || hasRemark) {
+                if (modalMode.value === 'add' || (modalMode.value === 'edit' && editable.value)) {
+                    if (JSON.stringify(form.value) !== formSnapshot) {
                         needConfirm = true;
                     }
-                } else if (modalMode.value === 'edit' && editable.value) {
-                    needConfirm = true;
                 }
                 if (needConfirm) {
                     if (confirm('您有未保存的修改，确定要关闭吗？')) {
@@ -3079,7 +3462,6 @@
                 bankFormMode.value = 'add';
                 bankForm.value = {key: '', label: '', category: ['deposit', 'debt'], showInList: true, remark: ''};
                 editingCardKey.value = '';
-                bankFormModified.value = false;
                 bankFormVisible.value = true;
             }
 
@@ -3087,7 +3469,6 @@
                 bankFormMode.value = 'edit';
                 bankForm.value = {...card, showInList: card.showInList !== false, remark: card.remark || '', originalCategory: [...card.category]};
                 editingCardKey.value = card.key;
-                bankFormModified.value = false;
                 bankFormVisible.value = true;
             }
 
@@ -3144,7 +3525,6 @@
                     showToast('✅ 银行卡已更新');
                 }
                 saveConfig(configs.value);
-                bankFormModified.value = false;
                 bankFormVisible.value = false;
             }
 
@@ -3166,7 +3546,7 @@
 
             function toggleBankCardDisabled(key) {
                 const card = configs.value.find(f => f.key === key);
-                if (!card) return;
+                if (!card) return false;
                 const newState = !card.disabled;
                 const action = newState ? '禁用' : '启用';
                 let msg = `确定要${action}「${card.label}」吗？`;
@@ -3179,11 +3559,39 @@
                     card.disabled = newState;
                     saveConfig(configs.value);
                     showToast(`✅ 已${action}「${card.label}」`);
+                    return true;
+                }
+                return false;
+            }
+
+            // 编辑银行卡弹窗内切换禁用/启用，成功后关闭弹窗回管理列表
+            function toggleDisabledFromForm() {
+                if (toggleBankCardDisabled(bankForm.value.key)) {
+                    bankFormVisible.value = false;
                 }
             }
 
             // 回收站列表：已软删除的银行卡
             const deletedCards = computed(() => configs.value.filter(c => c.isDeleted));
+
+            /**
+             * 手动调整银行卡顺序（在当前列表内上移/下移一位，交换 configs 数组下标并整体持久化）
+             * @param list 当前渲染的卡列表（管理面板传 activeCards，回收站传 deletedCards）
+             * @param idx 当前项下标
+             * @param dir -1 上移 / 1 下移
+             */
+            function moveCard(list, idx, dir) {
+                const swapIdx = idx + dir;
+                if (swapIdx < 0 || swapIdx >= list.length) return;
+                const arr = configs.value;
+                const ia = arr.findIndex(c => c.key === list[idx].key);
+                const ib = arr.findIndex(c => c.key === list[swapIdx].key);
+                if (ia < 0 || ib < 0) return;
+                const temp = arr[ia];
+                arr[ia] = arr[ib];
+                arr[ib] = temp;
+                saveConfig(configs.value);
+            }
 
             function openRecycleBin() {
                 recycleBinVisible.value = true;
@@ -3236,24 +3644,61 @@
                 showToast(`✅ 已彻底删除「${result.label}」，其历史数据共 ${result.removedCount} 条已清除`);
             }
 
-            // 关闭银行卡表单弹窗，有未保存修改时先确认
+            // 关闭银行卡表单弹窗：仅当内容相对原配置有变化才提示
             function closeBankCardForm() {
-                if (bankFormModified.value) {
+                let isDirty = false;
+
+                if (bankFormMode.value === 'edit') {
+                    const orig = bankForm.value.originalCategory || [];
+                    const current = bankForm.value.category || [];
+                    // 类型是否有变化
+                    if (orig.length !== current.length || orig.some(t => current.indexOf(t) === -1)) {
+                        isDirty = true;
+                    }
+                    const card = configs.value.find(c => c.key === editingCardKey.value);
+                    // 名称是否有变化
+                    if (card && bankForm.value.label.trim() !== card.label) {
+                        isDirty = true;
+                    }
+                    // 备注是否有变化
+                    if (card && (bankForm.value.remark || '') !== (card.remark || '')) {
+                        isDirty = true;
+                    }
+                    // 列表显示状态是否有变化
+                    if (card && bankForm.value.showInList !== (card.showInList !== false)) {
+                        isDirty = true;
+                    }
+                }
+
+                if (bankFormMode.value === 'add') {
+                    // 添加模式：填了名称或备注才算有内容
+                    if (bankForm.value.label.trim() !== '' || bankForm.value.remark.trim() !== '') {
+                        isDirty = true;
+                    }
+                }
+
+                if (isDirty) {
                     if (!confirm('您有未保存的修改，确定要关闭吗？')) {
                         return;
                     }
                 }
                 bankFormVisible.value = false;
+                bankForm.value.originalCategory = [];
             }
 
-            // 清空所有数据，谨慎操作！二次确认防误触
+            // 清空所有数据，谨慎操作！二次确认 + 输入指定文字防误触
             function clearData() {
-                if (confirm('确认清空所有数据？此操作不可恢复！')) {
-                    localStorage.removeItem(STORAGE_KEYS.RECORDS);
-                    localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
-                    localStorage.removeItem(STORAGE_KEYS.TARGET);
-                    location.reload();
+                if (!confirm('确认清空所有数据？此操作不可恢复！')) return;
+                const userInput = prompt('请键入「确认清空所有数据」以确认清空：');
+                if (userInput !== '确认清空所有数据') {
+                    showToast('❌ 输入错误，取消清空');
+                    return;
                 }
+                localStorage.removeItem(STORAGE_KEYS.RECORDS);
+                localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
+                localStorage.removeItem(STORAGE_KEYS.TARGET);
+                localStorage.removeItem(STORAGE_KEYS.UI_PREFS);
+                location.reload();
             }
 
             // 目标计划
@@ -3270,23 +3715,22 @@
                     }
                 } catch (_) {
                 }
-                // 检测旧版目标数据（有目标金额但缺每年支出，提示用户补充）
-                legacyTargetDetected.value = targetForm.value.targetAmount > 0 && !targetForm.value.annualExpense;
                 // 最新一条记录（日期最新）的总余额作为当前余额
                 const sorted = sortedRecords.value;
                 const latest = sorted.length ? sorted[0] : null;
                 targetForm.value.currentBalance = latest ? getBalance(latest) : 0;
                 targetCalculated.value = false;
                 targetEditable.value = false;
+                targetSnapshot = JSON.stringify(targetForm.value);
                 targetModalVisible.value = true;
             }
 
             function closeTargetModal() {
-                if (targetEditable.value) {
+                // 编辑态且内容相对打开时快照有变化才提示
+                if (targetEditable.value && JSON.stringify(targetForm.value) !== targetSnapshot) {
                     if (!confirm('您有未保存的修改，确定要关闭吗？')) return;
                 }
                 targetModalVisible.value = false;
-                legacyTargetDetected.value = false;
             }
 
             /**
@@ -3338,7 +3782,7 @@
              * 取消目标编辑：放弃修改，重载已保存数据
              */
             function cancelTargetEdit() {
-                if (targetEditable.value) {
+                if (targetEditable.value && JSON.stringify(targetForm.value) !== targetSnapshot) {
                     if (!confirm('您有未保存的修改，确定要返回吗？')) return;
                 }
                 try {
@@ -3351,7 +3795,6 @@
                 }
                 targetEditable.value = false;
                 targetCalculated.value = false;
-                showToast('已返回详情');
             }
 
             /**
@@ -3363,18 +3806,21 @@
 
             onMounted(() => {
                 loadData();
-                // 监听银行卡表单内容变化，标记未保存状态
-                watch(bankForm, () => {
-                    if (bankFormVisible.value) {
-                        bankFormModified.value = true;
-                    }
-                }, {deep: true});
+                // 界面偏好持久化：对比上次、目标提醒展开状态变化即保存
+                watch([showPrevData, showRemark, targetReminderExpanded], () => {
+                    saveUiPrefs({
+                        showPrevData: showPrevData.value,
+                        showRemark: showRemark.value,
+                        targetReminderExpanded: targetReminderExpanded.value
+                    });
+                });
                 // 编辑态刷新/关闭页面时拦截，防止未保存输入丢失
                 // 纯浏览态（查看记录、银行卡列表）不拦截，刷新不会丢数据
                 window.addEventListener('beforeunload', function (e) {
                     const recordEditing = modalVisible.value
                         && (modalMode.value === 'add' || (modalMode.value === 'edit' && editable.value));
-                    const editing = recordEditing || bankFormVisible.value;
+                    const targetEditing = targetModalVisible.value && targetEditable.value;
+                    const editing = recordEditing || bankFormVisible.value || targetEditing;
                     if (editing) {
                         e.preventDefault();
                         e.returnValue = '';
@@ -3392,7 +3838,10 @@
                 form,
                 showRemark,
                 displayFields,
+                showPrevData,
+                bubbleKey,
                 allConfigs,
+                activeCards,
                 editableFields,
                 bankManagerVisible,
                 bankFormVisible,
@@ -3407,6 +3856,11 @@
                 getTotalDeposit,
                 getTotalDebt,
                 getBalance,
+                getPrevData,
+                toggleBubble,
+                toggleShowPrev,
+                prevDateText,
+                formatSigned,
                 getDeletedDepositTotal,
                 getDeletedDebtTotal,
                 hasDeletedFields,
@@ -3422,6 +3876,7 @@
                 saveRecord,
                 deleteRecord,
                 copyRecord,
+                cancelCopy,
                 filterNumber,
                 refreshData,
 
@@ -3430,8 +3885,10 @@
                 openEditBankCard,
                 saveBankCard,
                 toggleBankCardDisabled,
+                toggleDisabledFromForm,
                 deleteBankCard,
                 deletedCards,
+                moveCard,
                 openRecycleBin,
                 closeRecycleBin,
                 restoreCard,
@@ -3448,6 +3905,8 @@
                 paginatedRecords,
                 prevPage,
                 nextPage,
+                jumpPage,
+                goToPage,
 
                 // 导出和导入
                 exportCSV,
@@ -3460,6 +3919,7 @@
                 importJSON,
                 importModalVisible,
                 importStats,
+                importData,
                 cancelImport,
                 doImport,
 
@@ -3475,8 +3935,6 @@
                 computedTargetAmount,
                 computedMonths,
                 computedDurationFromMonths,
-                legacyTargetDetected,
-                legacySuggestedExpense,
                 openTargetModal,
                 closeTargetModal,
                 calcTarget,
