@@ -211,6 +211,101 @@ body {
     border-bottom: 2px solid #e1e5ea;
 }
 
+/* 空状态引导 */
+.empty-guide {
+    text-align: center;
+    padding: 48px 20px;
+}
+
+.empty-guide-icon {
+    font-size: 46px;
+    line-height: 1;
+    margin-bottom: 14px;
+}
+
+.empty-guide-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0 0 8px;
+}
+
+.empty-guide-desc {
+    font-size: 14px;
+    color: #7a8699;
+    line-height: 1.7;
+    text-align: left;
+    margin: 0 auto 22px;
+    max-width: 340px;
+}
+
+.empty-guide-steps {
+    text-align: left;
+    max-width: 340px;
+    margin: 0 auto 22px;
+}
+
+.empty-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #4a5568;
+    padding: 5px 0;
+}
+
+.step-num {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    background: #4a6fa5;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-guide-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.empty-guide-actions button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.empty-step .step-text {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    line-height: 1.6;
+}
+
+.empty-step-multi {
+    align-items: flex-start;
+}
+
+.empty-step-multi .step-num {
+    margin-top: 1px;
+}
+
+.empty-step a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.empty-step a:hover {
+    text-decoration: underline;
+}
+
 /* 表格列宽 */
 .col-date {
     width: 50px;

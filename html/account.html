@@ -31,7 +31,18 @@
 
     <!-- 数据列表 -->
     <div class="table-wrapper">
-        <table>
+        <!-- 空状态引导 -->
+        <div v-if="records.length === 0" class="empty-guide">
+            <div class="empty-guide-icon">📊</div>
+            <p class="empty-guide-title">欢迎使用家庭账户统计</p>
+            <p class="empty-guide-desc">每月记录一两次各账户的「存款/负债」余额快照，观察家庭总资产的变化。</p>
+            <div class="empty-guide-steps">
+                <div class="empty-step"><span class="step-num">1</span>添加银行卡，自定义名称与类型</div>
+                <div class="empty-step"><span class="step-num">2</span>添加账户记录，填写各卡余额</div>
+                <div class="empty-step empty-step-multi"><span class="step-num">3</span><span class="step-text">也可以从官方代码仓库获取 <a href="https://gitee.com/rxbook/family-financial-records/blob/main/html_single/account_mock.json" target="_blank" rel="noopener"><b>测试数据</b></a>，导入后查看完整效果</span></div>
+            </div>
+        </div>
+        <table v-else>
             <colgroup>
                 <col class="col-date" />
                 <col class="col-balance" />
@@ -49,9 +60,6 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-if="paginatedRecords.length === 0">
-                <td colspan="100" class="empty-cell" style="text-align:center;padding:30px 0;color:#bbb;">暂无记录</td>
-            </tr>
             <tr v-for="(item, idx) in paginatedRecords" :key="item.date">
                 <!-- 日期（上：年份 / 下：月.日） -->
                 <td class="clickable-date" @click="openEditModal(item)">
@@ -100,7 +108,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination">
+    <div class="pagination" v-if="records.length > 0">
         <button @click="prevPage" :disabled="currentPage === 1">◀ 上一页</button>
         <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
         <span class="page-count">共 {{ records.length }} 条</span>
