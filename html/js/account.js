@@ -1,43 +1,15 @@
 const {createApp, ref, computed, onMounted, watch} = Vue;
 
-// 配置 & 存储
+// 底层依赖（IIFE 全局挂载）
+const Utils = window.FinancialUtils;
+const AccountData = window.AccountData;
+
 /**
  * VERSION_NUMBER: 数据格式版本号
  * 用于标识导出 JSON 的数据结构版本，仅在数据格式发生不兼容变更时递增。
  * 当前版本：1.0 - 稳定数据结构（card_xxx_deposit / card_xxx_debt 扁平结构）
  */
 const VERSION_NUMBER = 1.0;
-
-/**
- * STORAGE_KEYS: localStorage 存储键名统一管理
- * 各模块数据的读写统一从这里取键名，避免散落魔法字符串。
- * RECORDS: 账目记录（Array<{ date, remark, card_xxx_deposit, card_xxx_debt, ... }>）
- * BANK_CARD_CONFIGS: 银行卡配置（Array<{ key, label, category, disabled }>）
- * TARGET: 目标计划（Object<{ annualIncome, incomeRemark, annualExpense, targetDate, targetRemark, ... }>，targetAmount 实时计算不存储）
- * UI_PREFS: 界面偏好（Object<{ showPrevData, showRemark, targetReminderExpanded }>，记忆开关展开状态）
- */
-var STORAGE_KEYS = {
-    RECORDS: 'financial_account_records',
-    BANK_CARD_CONFIGS: 'financial_account_bank_card_configs',
-    TARGET: 'financial_account_target',
-    UI_PREFS: 'financial_account_ui_prefs'
-};
-
-function loadConfig() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
-        if (raw) {
-            const data = JSON.parse(raw);
-            if (Array.isArray(data) && data.length) return data;
-        }
-    } catch (_) {
-    }
-    return [];
-}
-
-function saveConfig(config) {
-    localStorage.setItem(STORAGE_KEYS.BANK_CARD_CONFIGS, JSON.stringify(config));
-}
 
 /**
  * DEFAULT_UI_PREFS: 界面偏好默认值
@@ -50,46 +22,16 @@ var DEFAULT_UI_PREFS = {
 };
 
 /**
- * 读取界面偏好（合并默认值，字段缺失自动补默认）
- * @returns {Object} 界面偏好对象
- */
-function loadUiPrefs() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEYS.UI_PREFS);
-        if (raw) {
-            const data = JSON.parse(raw);
-            if (data && typeof data === 'object') {
-                return Object.assign({}, DEFAULT_UI_PREFS, data);
-            }
-        }
-    } catch (_) {
-    }
-    return Object.assign({}, DEFAULT_UI_PREFS);
-}
-
-/**
- * 保存界面偏好
- * @param {Object} prefs 界面偏好对象
- */
-function saveUiPrefs(prefs) {
-    localStorage.setItem(STORAGE_KEYS.UI_PREFS, JSON.stringify(prefs));
-}
-
-function generateKey() {
-    return 'card_' + Date.now();
-}
-
-/**
  * 软删除银行卡（标记 isDeleted，历史数据保留）
  * @param {Array} configs 银行卡配置数组
  * @param {string} key 银行卡 key
- * @returns {boolean} 是否删除成功
+ * @returns {Promise<boolean>} 是否删除成功
  */
-function softDeleteBankCard(configs, key) {
+async function softDeleteBankCard(configs, key) {
     const card = configs.find(c => c.key === key);
     if (!card) return false;
     card.isDeleted = true;
-    saveConfig(configs);
+    await AccountData.saveBankCardConfigs(configs);
     return true;
 }
 
@@ -97,14 +39,14 @@ function softDeleteBankCard(configs, key) {
  * 恢复银行卡：软删除标记还原，历史数据自动恢复显示
  * @param {Array} configs 银行卡配置数组
  * @param {string} key 银行卡 key
- * @returns {Object|null} 恢复后的银行卡配置；不存在时返回 null
+ * @returns {Promise<Object|null>} 恢复后的银行卡配置；不存在时返回 null
  */
-function restoreBankCard(configs, key) {
+async function restoreBankCard(configs, key) {
     const card = configs.find(c => c.key === key);
     if (!card) return null;
     card.isDeleted = false;
     card.showInList = true; // 恢复后默认重新显示在列表中
-    saveConfig(configs);
+    await AccountData.saveBankCardConfigs(configs);
     return card;
 }
 
@@ -113,16 +55,16 @@ function restoreBankCard(configs, key) {
  * @param {Array} configs 银行卡配置数组
  * @param {Array} records 账户记录数组
  * @param {string} key 银行卡 key
- * @returns {Object|null} {label, removedCount}；不存在时返回 null
+ * @returns {Promise<Object|null>} {label, removedCount}；不存在时返回 null
  */
-function permanentDeleteBankCard(configs, records, key) {
+async function permanentDeleteBankCard(configs, records, key) {
     const card = configs.find(c => c.key === key);
     if (!card) return null;
     const label = card.label;
 
     const idx = configs.findIndex(c => c.key === key);
     if (idx !== -1) configs.splice(idx, 1);
-    saveConfig(configs);
+    await AccountData.saveBankCardConfigs(configs);
 
     const depositField = key + '_deposit';
     const debtField = key + '_debt';
@@ -140,132 +82,16 @@ function permanentDeleteBankCard(configs, records, key) {
         if (changed) removedCount++;
     });
     if (removedCount > 0) {
-        localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+        await AccountData.saveRecords(records);
     }
     return {label: label, removedCount: removedCount};
-}
-
-// 目标相关公共函数
-/**
- * 计算从今天到目标日期的剩余月数（四舍五入到月）
- * @param {string} targetDateStr - 目标日期字符串 'YYYY-MM-DD'
- * @returns {number} 剩余月数，如果日期无效或已过期返回 0
- */
-function calcMonths(targetDateStr) {
-    if (!targetDateStr) return 0;
-    const now = new Date();
-    const target = new Date(targetDateStr);
-    if (target <= now) return 0;
-    const months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
-    const days = target.getDate() - now.getDate();
-    // 如果天数超过 15 天，视为多一个月（四舍五入）
-    return months + (days > 15 ? 1 : 0);
-}
-
-/**
- * 计算目标金额：每年支出 ÷ 12 × 剩余月数
- * @param {number|string} annualExpense - 每年支出
- * @param {string} targetDateStr - 目标日期字符串
- * @returns {number} 目标金额，四舍五入到整数
- */
-function calcTargetAmount(annualExpense, targetDateStr) {
-    const expense = Number(annualExpense) || 0;
-    const months = calcMonths(targetDateStr);
-    if (expense <= 0 || months <= 0) return 0;
-    return Math.round((expense / 12) * months);
-}
-
-/**
- * 构建完整的目标数据对象（统一数据结构）
- * @param {Object} form - targetForm 对象
- * @returns {Object} 包含所有目标字段的完整数据对象
- */
-function buildTargetData(form) {
-    return {
-        annualIncome: form.annualIncome || '',   // 每年收入，用户填写
-        incomeRemark: form.incomeRemark || '',   // 每年收入补充说明，用户填写
-        annualExpense: form.annualExpense || '', // 每年支出，用户填写
-        expenseRemark: form.expenseRemark || '', // 每年支出说明，用户填写
-        targetDate: form.targetDate || '',       // 目标日期，用户填写
-        targetRemark: form.targetRemark || ''    // 目标说明，用户填写
-    };
-}
-
-/**
- * 格式化剩余月数为「X年X个月之后」
- * @param {number} months - 月数
- * @returns {string} 格式化的字符串
- */
-function formatDuration(months) {
-    if (months <= 0) return '';
-    const years = Math.floor(months / 12);
-    const remainMonths = months % 12;
-    let result = '';
-    if (years > 0) result += years + '年';
-    if (remainMonths > 0) result += remainMonths + '个月';
-    return result + '之后';
-}
-
-/**
- * 日期格式化为点分格式 'YYYY-MM-DD' -> 'YYYY.MM.DD'
- * @param {string} dateStr - 日期字符串
- * @returns {string} 点分格式的日期
- */
-function formatDateToDot(dateStr) {
-    if (!dateStr) return '-';
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-        return parts[0] + '.' + parts[1] + '.' + parts[2];
-    }
-    return dateStr;
-}
-
-/**
- * 计算距离目标统计：剩余金额、预计达成日期、达成所需时长
- * @param {number|string} annualIncome - 每年收入
- * @param {number|string} targetAmount - 目标金额
- * @param {number|string} currentBalance - 当前总余额
- * @returns {{remaining: number, targetDateDisplay: string, targetDuration: string}}
- */
-function calcTargetStats(annualIncome, targetAmount, currentBalance) {
-    const income = Number(annualIncome) || 0;
-    const target = Number(targetAmount) || 0;
-    const current = Number(currentBalance) || 0;
-
-    if (target <= 0 || income <= 0) {
-        return {remaining: 0, targetDateDisplay: '请填写有效数据', targetDuration: ''};
-    }
-
-    const remaining = target - current;
-    const monthlyIncome = income / 12;
-
-    if (remaining > 0 && monthlyIncome > 0) {
-        const monthsNeeded = Math.round(remaining / monthlyIncome);
-        const now = new Date();
-        const targetDate = new Date(now);
-        targetDate.setMonth(now.getMonth() + monthsNeeded);
-        const targetYear = targetDate.getFullYear();
-        const targetMonth = targetDate.getMonth() + 1;
-        const dateDisplay = `${targetYear}年${String(targetMonth).padStart(2, '0')}月`;
-
-        const years = Math.floor(monthsNeeded / 12);
-        const monthsRemain = monthsNeeded % 12;
-        let duration = '';
-        if (years > 0) duration += years + '年';
-        if (monthsRemain > 0) duration += monthsRemain + '个月';
-        if (!duration) duration = '不足1个月';
-
-        return {remaining, targetDateDisplay: dateDisplay, targetDuration: duration};
-    } else {
-        return {remaining, targetDateDisplay: '已达成或无法计算', targetDuration: ''};
-    }
 }
 
 const app = createApp({
     setup() {
         // 数据
         const records = ref([]);
-        const configs = ref(loadConfig());
+        const configs = ref([]);
 
         // 响应式：分页
         const currentPage = ref(1);         // 当前页码
@@ -286,11 +112,10 @@ const app = createApp({
         const form = ref({});
         // 详情逐卡对比：当前查看记录的上一条（日期更早的相邻）记录
         const prevRecord = ref(null);
-        const uiPrefs = loadUiPrefs();
-        const showPrevData = ref(uiPrefs.showPrevData === true);
+        const showPrevData = ref(DEFAULT_UI_PREFS.showPrevData);  // 详情逐卡对比开关
         // 差额气泡：当前点击的“上次”对比项 key（再点关闭）
         const bubbleKey = ref('');
-        const showRemark = ref(uiPrefs.showRemark === true);  // 备注输入框是否展开（编辑态，按上次偏好）
+        const showRemark = ref(DEFAULT_UI_PREFS.showRemark);  // 备注输入框是否展开（编辑态，按上次偏好）
 
         // 银行卡管理
         const bankManagerVisible = ref(false);
@@ -310,7 +135,7 @@ const app = createApp({
         // 目标
         const targetModalVisible = ref(false);
         const targetEditable = ref(false);
-        const targetReminderExpanded = ref(uiPrefs.targetReminderExpanded === true);
+        const targetReminderExpanded = ref(DEFAULT_UI_PREFS.targetReminderExpanded);
         const targetForm = ref({
             annualIncome: '',
             incomeRemark: '',
@@ -331,21 +156,21 @@ const app = createApp({
          * 计算距离目标日期的剩余月数（超过 15 天算一个月）
          */
         const computedMonths = computed(() => {
-            return calcMonths(targetForm.value.targetDate);
+            return Utils.calcMonths(targetForm.value.targetDate);
         });
 
         /**
          * 目标金额自动计算（每年支出 ÷ 12 × 剩余月数）
          */
         const computedTargetAmount = computed(() => {
-            return calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
+            return Utils.calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate);
         });
 
         /**
          * 将月数格式化为「X年X个月之后」
          */
         const computedDurationFromMonths = computed(() => {
-            return formatDuration(computedMonths.value);
+            return Utils.formatDuration(computedMonths.value);
         });
 
         // displayFields: 列表中实际显示的银行卡列（禁用、隐藏或已删除的不显示）
@@ -439,12 +264,13 @@ const app = createApp({
         }
 
         /**
-         * 切换详情“对比上次”开关：第一条记录（没有上一条）无法对比，提示并保持关闭
+         * 切换详情“对比上次”开关
+         * 第一条记录（没有上一条）无法对比，仅提示，不修改全局开关 showPrevData，
+         * 避免看完第一条后把其他详情页持久化的对比状态冲掉
          */
         function toggleShowPrev() {
             if (!prevRecord.value) {
                 showToast('当前是第一条记录，无法对比上次');
-                showPrevData.value = false;
                 return;
             }
             showPrevData.value = !showPrevData.value;
@@ -455,7 +281,7 @@ const app = createApp({
          */
         const prevDateText = computed(() => {
             if (!prevRecord.value) return '';
-            return formatDateToDot(prevRecord.value.date);
+            return Utils.formatDateToDot(prevRecord.value.date);
         });
 
         /**
@@ -463,7 +289,7 @@ const app = createApp({
          */
         function formatSigned(num) {
             if (num === null || num === undefined || isNaN(num)) return '';
-            return (num > 0 ? '+' : '') + formatNumber(num);
+            return (num > 0 ? '+' : '') + Utils.formatNumber(num);
         }
 
         // 总存款：所有 *_deposit 字段之和（含已删除银行卡的历史数据）
@@ -553,15 +379,6 @@ const app = createApp({
         }
 
         /**
-         * 格式化数字，添加千位分隔符
-         * 例如：3200 → "3,200"
-         */
-        function formatNumber(num) {
-            if (num === undefined || num === null || isNaN(num)) return num;
-            return Number(num).toLocaleString('en-US');
-        }
-
-        /**
          * 记录弹窗中是否显示该银行卡字段
          * 添加模式：只显示未禁用的银行卡
          * 编辑模式：显示所有未禁用卡，以及该记录中有非零金额的禁用卡（历史数据可继续修改）
@@ -632,7 +449,7 @@ const app = createApp({
             }
         }
 
-        function exportCSV() {
+        async function exportCSV() {
             if (records.value.length === 0) {
                 showToast('暂无数据');
                 return;
@@ -645,49 +462,44 @@ const app = createApp({
             let csv = '';
 
             // 读取目标数据
-            let targetData = null;
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
-                if (raw) targetData = JSON.parse(raw);
-            } catch (_) {
-            }
+            const targetData = await AccountData.loadTarget();
 
             if (targetData) {
                 // 当前总余额：取最新一条记录的余额
                 const latest = sorted[0];
                 const currentBalance = latest ? getBalance(latest) : 0;
                 // 目标金额实时计算（每年支出 ÷ 12 × 剩余月数）
-                const targetAmount = calcTargetAmount(targetData.annualExpense, targetData.targetDate);
+                const targetAmount = Utils.calcTargetAmount(targetData.annualExpense, targetData.targetDate);
                 // 距离目标剩余金额、预计达成日期：现场重算（与页面「开始计算」逻辑一致）
-                const targetCalc = calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
+                const targetCalc = Utils.calcTargetStats(targetData.annualIncome, targetAmount, currentBalance);
                 // 目标日期到今天的剩余月数（用于目标金额公式、每月最低收入）
-                const months = calcMonths(targetData.targetDate);
+                const months = Utils.calcMonths(targetData.targetDate);
                 const remaining = targetCalc.remaining;
 
                 const targetRows = [
                     ['【目标计划】'],
-                    ['每年收入', (targetData.annualIncome ? formatNumber(targetData.annualIncome) + ' 元' : ''),
-                        (targetData.annualIncome > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualIncome / 12)) + ' 元)' : '')],
+                    ['每年收入', (targetData.annualIncome ? Utils.formatNumber(targetData.annualIncome) + ' 元' : ''),
+                        (targetData.annualIncome > 0 ? '(平均每月 ' + Utils.formatNumber(Math.round(targetData.annualIncome / 12)) + ' 元)' : '')],
                     ['收入说明', targetData.incomeRemark || ''],
-                    ['每年支出', (targetData.annualExpense ? formatNumber(targetData.annualExpense) + ' 元' : ''),
-                        (targetData.annualExpense > 0 ? '(平均每月 ' + formatNumber(Math.round(targetData.annualExpense / 12)) + ' 元)' : '')],
+                    ['每年支出', (targetData.annualExpense ? Utils.formatNumber(targetData.annualExpense) + ' 元' : ''),
+                        (targetData.annualExpense > 0 ? '(平均每月 ' + Utils.formatNumber(Math.round(targetData.annualExpense / 12)) + ' 元)' : '')],
                     ['支出说明', targetData.expenseRemark || ''],
-                    ['目标日期', formatDateToDot(targetData.targetDate || ''),
-                        (months > 0 ? '（' + formatDuration(months) + '）' : '')],
-                    ['目标金额', (targetAmount > 0 ? formatNumber(targetAmount) + ' 元' : ''),
-                        (targetData.annualExpense && months > 0 ? '(' + formatNumber(targetData.annualExpense) + ' ÷ 12 × ' + months + ' 个月)' : '')],
+                    ['目标日期', Utils.formatDateToDot(targetData.targetDate || ''),
+                        (months > 0 ? '（' + Utils.formatDuration(months) + '）' : '')],
+                    ['目标金额', (targetAmount > 0 ? Utils.formatNumber(targetAmount) + ' 元' : ''),
+                        (targetData.annualExpense && months > 0 ? '(' + Utils.formatNumber(targetData.annualExpense) + ' ÷ 12 × ' + months + ' 个月)' : '')],
                     ['目标说明', targetData.targetRemark || ''],
-                    ['当前总余额', formatNumber(currentBalance) + ' 元'],
+                    ['当前总余额', Utils.formatNumber(currentBalance) + ' 元'],
                 ];
 
                 // 距离目标剩余金额和截止日期（仅当收入和目标金额有效时显示）
                 if (targetData.annualIncome > 0 && targetAmount > 0) {
                     targetRows.push(['（距离目标剩余金额和截止日期）', '按照当前收入和支出水平不变，不需要奋斗到目标日期，提前到什么时候可以达成目标？']);
-                    targetRows.push(['距离目标剩余金额', formatNumber(remaining) + ' 元',
-                        '(目标金额 ' + formatNumber(targetAmount) + ' - 当前余额 ' + formatNumber(currentBalance) + ')']);
+                    targetRows.push(['距离目标剩余金额', Utils.formatNumber(remaining) + ' 元',
+                        '(目标金额 ' + Utils.formatNumber(targetAmount) + ' - 当前余额 ' + Utils.formatNumber(currentBalance) + ')']);
                     targetRows.push(['剩余金额截止日期', targetCalc.targetDateDisplay,
                         (targetCalc.targetDuration ? '(还剩 ' + targetCalc.targetDuration + ')' : ''),
-                        '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 每年收入 ' + formatNumber(targetData.annualIncome) + ')']);
+                        '(目标剩余金额 ' + Utils.formatNumber(remaining) + ' ÷ 每年收入 ' + Utils.formatNumber(targetData.annualIncome) + ')']);
                 }
 
                 // 距离目标日期每月最低收入（仅当剩余金额 > 0 且剩余月数 > 0 时显示）
@@ -695,10 +507,10 @@ const app = createApp({
                     const monthlyMin = Math.round(remaining / months);
                     const yearlyMin = Math.round(remaining / months * 12);
                     targetRows.push(['（距离目标日期每月最低收入）', '一直奋斗到目标日期，每个月收入不能低于多少钱？']);
-                    targetRows.push(['每月最低收入', formatNumber(monthlyMin) + ' 元']);
-                    targetRows.push(['每年最低收入(每月×12)', formatNumber(yearlyMin) + ' 元',
-                        '从现在 到 ' + formatDateToDot(targetData.targetDate || '') + '，还剩下 ' + months + ' 个月',
-                        '(目标剩余金额 ' + formatNumber(remaining) + ' ÷ 剩余总月份 ' + months + ' 个月)']);
+                    targetRows.push(['每月最低收入', Utils.formatNumber(monthlyMin) + ' 元']);
+                    targetRows.push(['每年最低收入(每月×12)', Utils.formatNumber(yearlyMin) + ' 元',
+                        '从现在 到 ' + Utils.formatDateToDot(targetData.targetDate || '') + '，还剩下 ' + months + ' 个月',
+                        '(目标剩余金额 ' + Utils.formatNumber(remaining) + ' ÷ 剩余总月份 ' + months + ' 个月)']);
                 }
 
                 targetRows.forEach(row => {
@@ -732,7 +544,7 @@ const app = createApp({
                 const prev = (index + 1 < sorted.length) ? sorted[index + 1] : null;
                 const diff = prev ? getBalance(item) - getBalance(prev) : null;
                 const row = [
-                    formatDateToDot(item.date),
+                    Utils.formatDateToDot(item.date),
                     getBalance(item),
                     diff !== null ? diff : '-',
                     getTotalDeposit(item),
@@ -777,14 +589,9 @@ const app = createApp({
             showToast('✅ CSV 导出成功');
         }
 
-        function exportJSON() {
+        async function exportJSON() {
             // 读取目标数据
-            let targetData = null;
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
-                if (raw) targetData = JSON.parse(raw);
-            } catch (_) {
-            }
+            const targetData = await AccountData.loadTarget();
 
             // 仅目标有数据时也可导出；records/config/target 三者都为空的时候才提示
             if (records.value.length === 0 && configs.value.length === 0 && !targetData) {
@@ -880,7 +687,7 @@ const app = createApp({
             importData.value = null;
         }
 
-        function doImport(mode) {
+        async function doImport(mode) {
             const data = importData.value;
             if (!data) return;
             importModalVisible.value = false;
@@ -900,15 +707,15 @@ const app = createApp({
                         addedCount++;
                     }
                 });
-                saveData();
+                await saveData();
                 // 合并银行卡配置：直接覆盖
                 if (data.config && Array.isArray(data.config)) {
                     configs.value = data.config;
-                    saveConfig(configs.value);
+                    await AccountData.saveBankCardConfigs(configs.value);
                 }
                 // 合并目标：有则直接覆盖，并同步到目标表单
                 if (data.target) {
-                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    await AccountData.saveTarget(data.target);
                     targetForm.value = {...targetForm.value, ...data.target};
                 }
                 showToast(`✅ 合并导入完成：新增 ${addedCount} 条，更新 ${updatedCount} 条`);
@@ -916,18 +723,18 @@ const app = createApp({
                 // 覆盖导入：清空当前数据，完全替换为文件内容
                 if (data.config && Array.isArray(data.config)) {
                     configs.value = data.config;
-                    saveConfig(configs.value);
+                    await AccountData.saveBankCardConfigs(configs.value);
                 } else {
                     configs.value = [];
-                    saveConfig([]);
+                    await AccountData.saveBankCardConfigs([]);
                 }
                 records.value = data.records.slice();
-                saveData();
+                await saveData();
                 if (data.target) {
-                    localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data.target));
+                    await AccountData.saveTarget(data.target);
                     targetForm.value = {...targetForm.value, ...data.target};
                 } else {
-                    localStorage.removeItem(STORAGE_KEYS.TARGET);
+                    await AccountData.removeTarget();
                     targetForm.value = {
                         annualIncome: '', incomeRemark: '', annualExpense: '', expenseRemark: '',
                         targetAmount: 0, targetDate: '', targetRemark: '',
@@ -950,24 +757,18 @@ const app = createApp({
         }
 
         // 数据持久化
-        function loadData() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.RECORDS);
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    if (Array.isArray(data)) records.value = data;
-                }
-            } catch (_) {
-            }
+        async function loadData() {
+            const data = await AccountData.loadRecords();
+            if (Array.isArray(data)) records.value = data;
         }
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records.value));
+        async function saveData() {
+            await AccountData.saveRecords(records.value);
         }
 
         // 刷新数据（重新从 localStorage 加载）
-        function refreshData() {
-            loadData();
+        async function refreshData() {
+            await loadData();
             // 重新排序和分页会由 computed 自动触发
             showToast('✅ 数据已刷新');
         }
@@ -1018,7 +819,6 @@ const app = createApp({
             copySourceIndex = -1;
             form.value = getDefaultForm();
             formSnapshot = JSON.stringify(form.value);
-            showRemark.value = loadUiPrefs().showRemark === true;
             prevRecord.value = null;
             modalVisible.value = true;
         }
@@ -1033,13 +833,12 @@ const app = createApp({
             isCopy.value = false;
             form.value = {...records.value[realIdx]};
             formSnapshot = JSON.stringify(form.value);
-            showRemark.value = loadUiPrefs().showRemark === true; // 按上次偏好（展开/收起）
             // 上一条（日期更早的相邻）记录，供详情逐卡对比上次金额/差额
             const sorted = sortedRecords.value;
             const sIdx = sorted.findIndex(r => r.date === item.date);
             prevRecord.value = (sIdx !== -1 && sIdx + 1 < sorted.length) ? sorted[sIdx + 1] : null;
-            // 第一条记录没有上一条，关闭对比；其余记录保持当前开关（全局偏好自然延续）
-            if (!prevRecord.value) showPrevData.value = false;
+            // 不修改全局开关 showPrevData：第一条记录只是没有上一条，
+            // 复选框与对比区在模板里通过 prevRecord 判断隐藏，避免污染其他详情页持久化的开关
             bubbleKey.value = '';
             modalVisible.value = true;
         }
@@ -1056,7 +855,7 @@ const app = createApp({
             editable.value = false;
         }
 
-        function saveRecord() {
+        async function saveRecord() {
             const f = form.value;
             if (!f.date) {
                 showToast('请选择日期');
@@ -1109,7 +908,7 @@ const app = createApp({
                 records.value[editIndex.value] = clean;
                 showToast('✅ 更新成功');
             }
-            saveData();
+            await saveData();
             modalVisible.value = false;
             // add 模式：新记录按日期排最前，回到第一页便于查看
             // edit 模式：保留当前页，仅当当前页越界时修正到最后一页
@@ -1138,7 +937,6 @@ const app = createApp({
                 form.value = data;
                 formSnapshot = JSON.stringify(form.value);
                 editable.value = true;
-                showRemark.value = loadUiPrefs().showRemark === true;
                 modalVisible.value = true;
             }, 100);
         }
@@ -1156,10 +954,10 @@ const app = createApp({
             }
         }
 
-        function deleteRecord() {
+        async function deleteRecord() {
             if (confirm('确定删除该记录？')) {
                 records.value.splice(editIndex.value, 1);
-                saveData();
+                await saveData();
                 modalVisible.value = false;
                 showToast('🗑 已删除');
                 // 删除后若当前页已无数据，则回退一页
@@ -1203,7 +1001,7 @@ const app = createApp({
             bankFormVisible.value = true;
         }
 
-        function saveBankCard() {
+        async function saveBankCard() {
             const label = bankForm.value.label.trim();
             if (!label) {
                 showToast('请输入名称');
@@ -1235,7 +1033,7 @@ const app = createApp({
 
             if (bankFormMode.value === 'add') {
                 configs.value.push({
-                    key: generateKey(),
+                    key: Utils.generateKey(),
                     label: label,
                     category: [...bankForm.value.category],
                     disabled: false,
@@ -1255,12 +1053,12 @@ const app = createApp({
                 configs.value[idx].remark = bankForm.value.remark || '';
                 showToast('✅ 银行卡已更新');
             }
-            saveConfig(configs.value);
+            await AccountData.saveBankCardConfigs(configs.value);
             bankFormVisible.value = false;
         }
 
         // 删除银行卡（软删除：标记 isDeleted，历史数据保留，可到回收站恢复）
-        function deleteBankCard() {
+        async function deleteBankCard() {
             const cardKey = editingCardKey.value;
             const card = configs.value.find(f => f.key === cardKey);
             if (!card) {
@@ -1270,12 +1068,12 @@ const app = createApp({
             if (!confirm(`确定要删除银行卡「${card.label}」吗？\n历史数据保留，可到回收站恢复。`)) {
                 return;
             }
-            softDeleteBankCard(configs.value, cardKey);
+            await softDeleteBankCard(configs.value, cardKey);
             bankFormVisible.value = false;
             showToast(`✅ 已删除银行卡「${card.label}」`);
         }
 
-        function toggleBankCardDisabled(key) {
+        async function toggleBankCardDisabled(key) {
             const card = configs.value.find(f => f.key === key);
             if (!card) return false;
             const newState = !card.disabled;
@@ -1288,7 +1086,7 @@ const app = createApp({
             }
             if (confirm(msg)) {
                 card.disabled = newState;
-                saveConfig(configs.value);
+                await AccountData.saveBankCardConfigs(configs.value);
                 showToast(`✅ 已${action}「${card.label}」`);
                 return true;
             }
@@ -1296,8 +1094,8 @@ const app = createApp({
         }
 
         // 编辑银行卡弹窗内切换禁用/启用，成功后关闭弹窗回管理列表
-        function toggleDisabledFromForm() {
-            if (toggleBankCardDisabled(bankForm.value.key)) {
+        async function toggleDisabledFromForm() {
+            if (await toggleBankCardDisabled(bankForm.value.key)) {
                 bankFormVisible.value = false;
             }
         }
@@ -1311,7 +1109,7 @@ const app = createApp({
          * @param idx 当前项下标
          * @param dir -1 上移 / 1 下移
          */
-        function moveCard(list, idx, dir) {
+        async function moveCard(list, idx, dir) {
             const swapIdx = idx + dir;
             if (swapIdx < 0 || swapIdx >= list.length) return;
             const arr = configs.value;
@@ -1321,7 +1119,7 @@ const app = createApp({
             const temp = arr[ia];
             arr[ia] = arr[ib];
             arr[ib] = temp;
-            saveConfig(configs.value);
+            await AccountData.saveBankCardConfigs(configs.value);
         }
 
         function openRecycleBin() {
@@ -1332,9 +1130,9 @@ const app = createApp({
             recycleBinVisible.value = false;
         }
 
-        // 恢复银行卡：软删除标记还原，历史记录中的对应数据自动恢复显示
-        function restoreCard(card) {
-            const restored = restoreBankCard(configs.value, card.key);
+        // 恢复银行卡：软删除标记还原，历史记录中的对应数据自动恢复
+        async function restoreCard(card) {
+            const restored = await restoreBankCard(configs.value, card.key);
             if (!restored) {
                 showToast('❌ 银行卡不存在');
                 return;
@@ -1354,7 +1152,7 @@ const app = createApp({
         }
 
         // 确认彻底删除：输入指定文字后执行，不可恢复
-        function confirmPermanentDelete() {
+        async function confirmPermanentDelete() {
             const card = recycleTargetCard.value;
             if (!card) return;
             const userInput = prompt('请键入「确定彻底删除银行卡」以确认彻底删除：');
@@ -1367,7 +1165,7 @@ const app = createApp({
             recycleConfirmVisible.value = false;
             recycleTargetCard.value = null;
 
-            const result = permanentDeleteBankCard(configs.value, records.value, card.key);
+            const result = await permanentDeleteBankCard(configs.value, records.value, card.key);
             if (!result) {
                 showToast('❌ 银行卡不存在');
                 return;
@@ -1418,17 +1216,14 @@ const app = createApp({
         }
 
         // 清空所有数据，谨慎操作！二次确认 + 输入指定文字防误触
-        function clearData() {
+        async function clearData() {
             if (!confirm('确认清空所有数据？此操作不可恢复！')) return;
             const userInput = prompt('请键入「确认清空所有数据」以确认清空：');
             if (userInput !== '确认清空所有数据') {
                 showToast('❌ 输入错误，取消清空');
                 return;
             }
-            localStorage.removeItem(STORAGE_KEYS.RECORDS);
-            localStorage.removeItem(STORAGE_KEYS.BANK_CARD_CONFIGS);
-            localStorage.removeItem(STORAGE_KEYS.TARGET);
-            localStorage.removeItem(STORAGE_KEYS.UI_PREFS);
+            await AccountData.clearAll();
             location.reload();
         }
 
@@ -1437,14 +1232,10 @@ const app = createApp({
          * 打开目标计划弹窗
          * 从 localStorage 加载目标数据，最新一条记录的总余额作为当前余额
          */
-        function openTargetModal() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    targetForm.value = {...targetForm.value, ...data};
-                }
-            } catch (_) {
+        async function openTargetModal() {
+            const data = await AccountData.loadTarget();
+            if (data) {
+                targetForm.value = {...targetForm.value, ...data};
             }
             // 最新一条记录（日期最新）的总余额作为当前余额
             const sorted = sortedRecords.value;
@@ -1469,7 +1260,7 @@ const app = createApp({
          */
         function calcTarget() {
             const annual = Number(targetForm.value.annualIncome) || 0;
-            const target = calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
+            const target = Utils.calcTargetAmount(targetForm.value.annualExpense, targetForm.value.targetDate); // 实时计算
             const current = Number(targetForm.value.currentBalance) || 0;
             if (target <= 0 || annual <= 0) {
                 showToast('请先填写有效的每年收入和目标金额');
@@ -1478,7 +1269,7 @@ const app = createApp({
 
             targetForm.value.targetAmount = target; // 仅用于计算结果快照展示，不存到存储
             // 复用公共计算函数（与 CSV 导出逻辑一致）
-            const result = calcTargetStats(annual, target, current);
+            const result = Utils.calcTargetStats(annual, target, current);
             targetForm.value.remaining = result.remaining;
             targetForm.value.targetDateDisplay = result.targetDateDisplay;
             targetForm.value.targetDuration = result.targetDuration;
@@ -1488,11 +1279,11 @@ const app = createApp({
         /**
          * 保存目标计划数据
          */
-        function saveTarget() {
+        async function saveTarget() {
             try {
-                // 使用公共函数构建完整数据（自动计算目标金额）
-                const data = buildTargetData(targetForm.value);
-                localStorage.setItem(STORAGE_KEYS.TARGET, JSON.stringify(data));
+                // 使用公共函数构建完整数据（目标金额实时计算，不写入存储）
+                const data = Utils.buildTargetData(targetForm.value);
+                await AccountData.saveTarget(data);
 
                 showToast('✅ 目标已保存');
                 targetEditable.value = false;
@@ -1512,17 +1303,13 @@ const app = createApp({
         /**
          * 取消目标编辑：放弃修改，重载已保存数据
          */
-        function cancelTargetEdit() {
+        async function cancelTargetEdit() {
             if (targetEditable.value && JSON.stringify(targetForm.value) !== targetSnapshot) {
                 if (!confirm('您有未保存的修改，确定要返回吗？')) return;
             }
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.TARGET);
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    targetForm.value = {...targetForm.value, ...data};
-                }
-            } catch (_) {
+            const data = await AccountData.loadTarget();
+            if (data) {
+                targetForm.value = {...targetForm.value, ...data};
             }
             targetEditable.value = false;
             targetCalculated.value = false;
@@ -1535,11 +1322,24 @@ const app = createApp({
             showRemark.value = !showRemark.value;
         }
 
-        onMounted(() => {
-            loadData();
-            // 界面偏好持久化：对比上次、目标提醒展开状态变化即保存
+        onMounted(async () => {
+            // 异步加载所有数据
+            configs.value = await AccountData.loadBankCardConfigs();
+            await loadData();
+            const targetData = await AccountData.loadTarget();
+            if (targetData) {
+                targetForm.value = {...targetForm.value, ...targetData};
+            }
+            // 界面偏好：合并默认值后恢复三个开关
+            const savedPrefs = await AccountData.loadUIPrefs();
+            const prefs = Object.assign({}, DEFAULT_UI_PREFS, savedPrefs);
+            showPrevData.value = prefs.showPrevData === true;
+            showRemark.value = prefs.showRemark === true;
+            targetReminderExpanded.value = prefs.targetReminderExpanded === true;
+
+            // 界面偏好持久化：对比上次、备注、目标提醒展开状态变化即保存
             watch([showPrevData, showRemark, targetReminderExpanded], () => {
-                saveUiPrefs({
+                AccountData.saveUIPrefs({
                     showPrevData: showPrevData.value,
                     showRemark: showRemark.value,
                     targetReminderExpanded: targetReminderExpanded.value
@@ -1569,6 +1369,7 @@ const app = createApp({
             form,
             showRemark,
             displayFields,
+            prevRecord,
             showPrevData,
             bubbleKey,
             allConfigs,
@@ -1596,8 +1397,8 @@ const app = createApp({
             getDeletedDebtTotal,
             hasDeletedFields,
             getDiff,
-            formatNumber,
-            formatDateToDot,
+            formatNumber: Utils.formatNumber,
+            formatDateToDot: Utils.formatDateToDot,
             shouldShowFieldInModal,
             shouldShowTypeField,
 
